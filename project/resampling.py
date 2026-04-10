@@ -30,12 +30,12 @@ samplers = [
     RandomOverSampler(sampling_strategy='not majority', random_state=42),
     SMOTE(sampling_strategy='not majority', random_state=42, k_neighbors=5),
     BorderlineSMOTE(sampling_strategy='not majority', random_state=42, kind='borderline-1'),
-    ADASYN(sampling_strategy='not majority', random_state=42),
+    #ADASYN(sampling_strategy='not majority', random_state=42),
     
     #undersampling
     RandomUnderSampler(sampling_strategy='not minority', random_state=42),
     TomekLinks(sampling_strategy='not minority'),
-    EditedNearestNeighbours(sampling_strategy='not minority'),
+    #EditedNearestNeighbours(sampling_strategy='not minority'),
     NearMiss(sampling_strategy='not minority', version=1),
     OneSidedSelection(sampling_strategy='not minority', random_state=42),
 ]

@@ -65,6 +65,9 @@ def plot_after_resampling(pca, sampler, x_train, y_train):
     plt.close()
     return Counter(x_train)
 
+def table_of_result():
+    pass
+
 
 #f1 (macro), auc, gmean
 #macro recall - насколько хорошо находятся редкие классы

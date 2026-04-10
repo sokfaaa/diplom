@@ -1,30 +1,56 @@
-from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from imblearn.pipeline import Pipeline
+
+import metrics
+import resampling
+import models
+import data_loader
+
+from scipy.io import arff
+
+data, meta = arff.loadarff('dataset_41_glass.arff')
+df = pd.DataFrame(data)
+df["Type"] = df["Type"].str.decode("utf-8")
+
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+y = le.fit_transform(df["Type"])
+x = df.drop(columns="Type")
+
 from sklearn.model_selection import train_test_split
 
-import data_loader
-import metrics
-import tqdm
+x_train, x_test, y_train, y_test = train_test_split(
+    x,y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
 
-datasets = data_loader.load_all_df()
+print(data_loader.count_IR(y_train))
 
-for dataset_name, data in datasets.items():
-    print(f"Начало обработки датасета {dataset_name}")
-    x = data["x"]
-    y = data["y"]
+""" 
+results = []
 
-    x_train, x_test, y_train, y_test = train_test_split(
-        x, y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y
-    )
+for sampler in resampling.samplers:
+    for model in models.list_models:
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("sampler", sampler),
+            ("model", model)
+        ])
 
-    model = RandomForestClassifier(random_state=42)
-    model.fit(x_train, y_train)
-    y_pred = model.predict(x_test)
-    y_proba = model.predict_proba(x_test)
+        pipe.fit(x_train, y_train)
 
-    print(metrics.evaluate_model(y_test, y_pred, y_proba))
-    metrics.draw_confusion_matrix(dataset_name, y_test, y_pred)
+        y_pred = pipe.predict(x_test)
+        y_proba = pipe.predict_proba(x_test)
 
-    print(f"Обработана датасет {dataset_name}", "\n")
+        print(metrics.evaluate_model(y_test, y_pred, y_proba))
+        metrics.plot_after_resampling(metrics.plot_before_resampling("glass", x_train, y_train),sampler, x_train, y_train)
+
+#result = pd.DataFrame(results)
+#print(result.head())
+"""
