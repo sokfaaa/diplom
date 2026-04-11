@@ -11,6 +11,8 @@ import data_loader
 
 from scipy.io import arff
 
+from collections import Counter
+
 data, meta = arff.loadarff('dataset_41_glass.arff')
 df = pd.DataFrame(data)
 df["Type"] = df["Type"].str.decode("utf-8")
@@ -30,8 +32,17 @@ x_train, x_test, y_train, y_test = train_test_split(
     random_state=42
 )
 
-print(data_loader.count_IR(y_train))
+print(metrics.n3_per_class(x_train, y_train))
 
+
+"""x_new, y_new = data_loader.increase_multiclass_imblance(x_train, y_train, 0.5)
+
+print(metrics.count_IR(y_new))
+print(Counter(y_train), Counter(y_new))"""
+"""col = Counter(y_train)
+min_key, min_count = min(col.items(), key=itemgetter(1))
+print(f"min key:{min_key}, min_count:{min_count}")
+print(col)"""
 """ 
 results = []
 
