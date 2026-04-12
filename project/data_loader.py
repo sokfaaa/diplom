@@ -7,6 +7,8 @@ import numpy as np
 from collections import Counter
 from operator import itemgetter
 
+from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import ADASYN
 
 #загрузка данных 
 
@@ -102,12 +104,135 @@ def increase_multiclass_imblance(x, y, keep_ratio=0.7, random_state=42):
     y_new = y[indices_to_keep].copy()
 
     return x_new, y_new
-    
-def change_overlap():
-    pass
 
-def generate_noise():
-    pass
+
+def increase_overlap_smote(
+    X,
+    y,
+    k_neighbors=5,
+    sampling_strategy='not majority',
+    random_state=42,
+    return_array=False
+):
+    y = np.asarray(y).squeeze()
+
+    class_counts = Counter(y)
+    min_class_size = min(class_counts.values())
+
+    max_valid_k = min_class_size - 1
+    if max_valid_k < 1:
+        raise ValueError("Слишком мало объектов в одном из классов для применения SMOTE.")
+
+    if k_neighbors > max_valid_k:
+        print(f"Предупреждение: k_neighbors={k_neighbors} слишком велик, "
+              f"заменяю на {max_valid_k}")
+        k_neighbors = max_valid_k
+
+    smote = SMOTE(
+        k_neighbors=k_neighbors,
+        sampling_strategy=sampling_strategy,
+        random_state=random_state
+    )
+
+    X_res, y_res = smote.fit_resample(X, y)
+
+    if isinstance(X, pd.DataFrame) and not return_array:
+        X_res = pd.DataFrame(X_res, columns=X.columns)
+
+    return X_res, y_res
+
+
+def increase_overlap_adasyn(
+    X,
+    y,
+    n_neighbors=5,
+    sampling_strategy='not majority',
+    random_state=42,
+    return_array=False,
+    verbose=True
+):
+    """
+    Увеличивает overlap классов с помощью ADASYN.
+
+    Parameters
+    ----------
+    X : pd.DataFrame or np.ndarray
+        Матрица признаков.
+    y : array-like
+        Целевая переменная.
+    n_neighbors : int
+        Число соседей для ADASYN.
+        Чем больше, тем сильнее могут смещаться синтетические точки к границам классов.
+    sampling_strategy : str or dict
+        Для multiclass лучше использовать 'not majority', 'minority', 'all'
+        или словарь {class_label: target_count}.
+    random_state : int
+        Seed для воспроизводимости.
+    return_array : bool
+        Если X был DataFrame и return_array=False, вернётся DataFrame.
+        Иначе вернётся numpy array.
+    verbose : bool
+        Печатать ли предупреждения.
+
+    Returns
+    -------
+    X_res, y_res
+    """
+
+    y = np.asarray(y).squeeze()
+
+    class_counts = Counter(y)
+    min_class_size = min(class_counts.values())
+
+    # Для поиска соседей нужен хотя бы 1 допустимый сосед
+    max_valid_neighbors = min_class_size - 1
+    if max_valid_neighbors < 1:
+        raise ValueError(
+            "Слишком мало объектов в одном из классов для ADASYN."
+        )
+
+    if n_neighbors > max_valid_neighbors:
+        if verbose:
+            print(
+                f"Предупреждение: n_neighbors={n_neighbors} слишком велик для "
+                f"минимального класса размера {min_class_size}. "
+                f"Использую n_neighbors={max_valid_neighbors}."
+            )
+        n_neighbors = max_valid_neighbors
+
+    adasyn = ADASYN(
+        sampling_strategy=sampling_strategy,
+        random_state=random_state,
+        n_neighbors=n_neighbors
+    )
+
+    try:
+        X_res, y_res = adasyn.fit_resample(X, y)
+    except ValueError as e:
+        # Частый кейс ADASYN:
+        # "No samples will be generated with the provided ratio settings."
+        # Это значит, что для текущей структуры данных ADASYN не может
+        # породить новые точки при выбранных настройках.
+        raise ValueError(
+            f"ADASYN не смог сгенерировать новые объекты: {e}\n"
+            "Попробуй:\n"
+            "1) уменьшить n_neighbors,\n"
+            "2) задать sampling_strategy вручную через dict,\n"
+            "3) использовать SMOTE вместо ADASYN."
+        ) from e
+
+    if isinstance(X, pd.DataFrame) and not return_array:
+        X_res = pd.DataFrame(X_res, columns=X.columns)
+
+    return X_res, y_res
+
+
+
+def add_noise(x, sigma=0.1):
+    return x + np.random.normal(0, sigma, x.shape)
+
+
+
     
 
 

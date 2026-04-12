@@ -2,18 +2,24 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from itertools import combinations
+from collections import Counter
 
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,roc_auc_score
 from sklearn.metrics import f1_score
 from imblearn.metrics import geometric_mean_score
-from sklearn.decomposition import PCA
 
-from collections import Counter
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import NearestNeighbors
+
+
 
 def evaluate_model(y_test, y_pred, y_proba):
     f1 = f1_score(y_test, y_pred, average= "macro")
     auc = roc_auc_score(y_test, y_proba, multi_class='ovr')
     gmean = geometric_mean_score(y_test, y_pred, average='macro')
+    #еще добавить сбалансированную точность
     return f1, auc, gmean
 
 def draw_confusion_matrix(name, y_test, y_pred):
@@ -129,7 +135,6 @@ def fisher_feature_overlap(X, y):
 #macro recall - насколько хорошо находятся редкие классы
 #balanced accuracy  
 
-from itertools import combinations
 
 def volume_of_overlap_region(X, y):
     """
@@ -169,7 +174,7 @@ def volume_of_overlap_region(X, y):
     return pd.Series(results, index=feature_names).sort_values(ascending=False)
 
 
-from sklearn.neighbors import KNeighborsClassifier
+
 
 def n3_error_rate(X, y):
     """
@@ -201,9 +206,6 @@ def n3_error_rate(X, y):
 
     return errors / n
 
-
-
-from sklearn.neighbors import NearestNeighbors
 
 def n3_error_rate_fast(X, y):
     """

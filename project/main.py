@@ -34,7 +34,30 @@ x_train, x_test, y_train, y_test = train_test_split(
 
 print(metrics.n3_per_class(x_train, y_train))
 
+metrics.plot_before_resampling('glass', x_train, y_train)
 
+
+
+X_new, y_new = data_loader.increase_overlap_adasyn(
+    x_train,
+    y_train,
+    n_neighbors=2,
+    sampling_strategy='not majority',
+    random_state=42
+)
+print(metrics.n3_error_rate(X_new, y_new))
+
+metrics.plot_before_resampling('glass_after_overlap_adasyn', X_new, y_new)
+
+
+"""for k in [2, 5, 10]:
+    X_new, y_new = data_loader.increase_overlap_smote(x_train, y_train, k_neighbors=k)
+    
+    print(f"k_neighbors = {k}")
+    print(metrics.n3_error_rate(X_new, y_new))
+
+    metrics.plot_before_resampling(f'glass_after_overlap{k}', X_new, y_new)
+"""
 """x_new, y_new = data_loader.increase_multiclass_imblance(x_train, y_train, 0.5)
 
 print(metrics.count_IR(y_new))
