@@ -31,6 +31,7 @@ def draw_confusion_matrix(name, y_test, y_pred):
     plt.close()
 
 def plot_before_resampling(name_dataset, x_train, y_train):
+    y_train = y_train.squeeze()
     # уменьшаем размерность
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(x_train)

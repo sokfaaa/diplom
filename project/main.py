@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -7,12 +8,49 @@ from imblearn.pipeline import Pipeline
 import metrics
 import resampling
 import models
-import data_loader
+import data
 
 from scipy.io import arff
 
 from collections import Counter
 
+levels = ['easy', 'medium', 'hard']
+base_path = "datasets/overlap"
+os.makedirs(base_path, exist_ok=True)
+
+for overlap_level in complexity:   
+    config = data.build_synthetic_config(n_samples=,
+        n_features='medium',
+        n_classes='medium',
+        imbalance_level="easy",
+        overlap_level="easy",
+        noise_level="easy",
+        cluster_level="easy",
+        random_state=42))
+        
+#x.to_csv('x.csv', index=False)
+#y.to_csv('y.csv', index=False)
+#x = pd.read_csv("x.csv")
+#y = pd.read_csv("y.csv")
+
+x_train, x_test, y_train, y_test = train_test_split(
+    x,y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
+
+print(metrics.n3_error_rate_fast(x_train, y_train))
+
+
+
+
+
+
+
+
+
+"""
 data, meta = arff.loadarff('dataset_41_glass.arff')
 df = pd.DataFrame(data)
 df["Type"] = df["Type"].str.decode("utf-8")
@@ -41,14 +79,14 @@ metrics.plot_before_resampling('glass', x_train, y_train)
 X_new, y_new = data_loader.increase_overlap_adasyn(
     x_train,
     y_train,
-    n_neighbors=2,
+    n_neighbors=3,
     sampling_strategy='not majority',
     random_state=42
 )
 print(metrics.n3_error_rate(X_new, y_new))
 
 metrics.plot_before_resampling('glass_after_overlap_adasyn', X_new, y_new)
-
+"""
 
 """for k in [2, 5, 10]:
     X_new, y_new = data_loader.increase_overlap_smote(x_train, y_train, k_neighbors=k)

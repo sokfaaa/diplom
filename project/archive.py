@@ -1,16 +1,9 @@
-#загрузка датасетов
-from config import DATASETS
-from ucimlrepo import fetch_ucirepo 
-from tqdm import tqdm
-import numpy as np
 
-from collections import Counter
-from operator import itemgetter
 
-from imblearn.over_sampling import SMOTE
-from imblearn.over_sampling import ADASYN
 
-#загрузка данных 
+#из data.py
+
+#загрузка данных из uci (uci в итоге крашнулся пришлось искать данные в других местах)
 
 def load_df(dataset_id):
     df = fetch_ucirepo(id=dataset_id)
@@ -27,8 +20,7 @@ def load_all_df():
     print("Данные загружены", "\n")
     return dfs
 
-#модификация шума, перекрытия, уровня дисбаланса
-
+#модификация шума и уровня дисбаланса
 
 
 def increase_imbalance_by_removing_minority(x,y, remove_fraction=0.3, random_state=42):
@@ -105,6 +97,12 @@ def increase_multiclass_imblance(x, y, keep_ratio=0.7, random_state=42):
 
     return x_new, y_new
 
+def add_noise(x, sigma=0.1):
+    return x + np.random.normal(0, sigma, x.shape)
+
+
+#модификация overlap (мне вообще не нравится как это работает, передалю)
+    
 
 def increase_overlap_smote(
     X,
@@ -225,17 +223,6 @@ def increase_overlap_adasyn(
         X_res = pd.DataFrame(X_res, columns=X.columns)
 
     return X_res, y_res
-
-
-
-def add_noise(x, sigma=0.1):
-    return x + np.random.normal(0, sigma, x.shape)
-
-
-
-    
-
-
 
 
 
