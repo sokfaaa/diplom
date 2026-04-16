@@ -1,165 +1,135 @@
-import numpy as np 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from itertools import combinations
+from __future__ import annotations
+
 from collections import Counter
+from itertools import combinations
+from typing import Any, Dict
 
-from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,roc_auc_score
-from sklearn.metrics import f1_score
-from imblearn.metrics import geometric_mean_score
-
-from sklearn.decomposition import PCA
-from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
 
+# =========================================================
+# Utils
+# =========================================================
 
-def evaluate_model(y_test, y_pred, y_proba):
-    f1 = f1_score(y_test, y_pred, average= "macro")
-    auc = roc_auc_score(y_test, y_proba, multi_class='ovr')
-    gmean = geometric_mean_score(y_test, y_pred, average='macro')
-    #еще добавить сбалансированную точность
-    return f1, auc, gmean
-
-def draw_confusion_matrix(name, y_test, y_pred):
-    cm = confusion_matrix(y_test, y_pred)
-    plot = sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.xlabel("Predicted")
-    plt.ylabel("Actual")
-    plt.savefig(f'{name}.png', dpi=300, bbox_inches='tight')
-    plt.close()
-
-def plot_before_resampling(name_dataset, x_train, y_train):
-    y_train = y_train.squeeze()
-    # уменьшаем размерность
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(x_train)
-
-    plt.figure(figsize=(6, 5))
-
-    for label in set(y_train):
-        plt.scatter(
-            X_pca[y_train == label, 0],
-            X_pca[y_train == label, 1],
-            label=label
-        )
-
-    plt.title("До сэмплинга")
-    plt.legend()
-    plt.savefig(f'{name_dataset}.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    return pca
-
-def plot_after_resampling(pca, sampler, x_train, y_train):
-    X_res, y_res = sampler.fit_resample(x_train, y_train)
-
-    # PCA снова
-    X_res_pca = pca.transform(X_res)
-
-    plt.figure(figsize=(6, 5))
-
-    for label in set(y_res):
-        plt.scatter(
-            X_res_pca[y_res == label, 0],
-            X_res_pca[y_res == label, 1],
-            label=label
-        )
-
-    plt.title("После RandomOverSampler")
-    plt.legend()
-    plt.savefig(f'{sampler.__class__.__name__}.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    return Counter(x_train)
-
-def table_of_result():
-    pass
-
-def count_IR(y_train):
-    counts = Counter(y_train)
-    N_max = max(counts.values())
-
-    basic_IR = N_max/min(counts.values())
-    #average_IR = N_max / mean(counts.values())
-    
-    per_class_IR = {
-        cls: N_max / count for cls, count in counts.items()
-    }
-
-    return basic_IR, per_class_IR
+def _to_numpy_y(y: Any) -> np.ndarray:
+    if isinstance(y, pd.DataFrame):
+        y = y.squeeze()
+    if isinstance(y, pd.Series):
+        return y.to_numpy().squeeze()
+    return np.asarray(y).squeeze()
 
 
-def fisher_feature_overlap(X, y):
-    """
-    F1: Fisher's discriminant ratio для каждого признака.
-    
-    Parameters
-    ----------
-    X : pd.DataFrame or np.ndarray
-    y : array-like
-    
-    Returns
-    -------
-    pd.Series
-        Значение Fisher ratio для каждого признака.
-    """
+def _to_numpy_x(X: Any) -> np.ndarray:
     if isinstance(X, pd.DataFrame):
-        feature_names = X.columns
-        X = X.values
-    else:
-        X = np.asarray(X)
-        feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+        return X.to_numpy()
+    return np.asarray(X)
 
-    y = np.asarray(y).squeeze()
-    classes = np.unique(y)
 
-    overall_mean = np.mean(X, axis=0)
+def _get_feature_names(X: Any):
+    if isinstance(X, pd.DataFrame):
+        return list(X.columns)
+    X_np = np.asarray(X)
+    return [f"feature_{i}" for i in range(X_np.shape[1])]
 
-    numerator = np.zeros(X.shape[1], dtype=float)
-    denominator = np.zeros(X.shape[1], dtype=float)
+
+# =========================================================
+# Imbalance metrics
+# =========================================================
+
+def class_counts(y: Any) -> Counter:
+    y_np = _to_numpy_y(y)
+    return Counter(y_np)
+
+
+def imbalance_ratio(y: Any) -> float:
+    """
+    Global IR = max_class_size / min_class_size
+    """
+    counts = class_counts(y)
+    return max(counts.values()) / min(counts.values())
+
+
+def imbalance_ratio_per_class(y: Any) -> pd.Series:
+    """
+    IR_i = N_max / N_i
+    """
+    counts = class_counts(y)
+    max_count = max(counts.values())
+
+    result = {cls: max_count / count for cls, count in counts.items()}
+    return pd.Series(result, name="IR_per_class").sort_values(ascending=False)
+
+
+# =========================================================
+# Overlap metrics: F1 (Fisher)
+# =========================================================
+
+def fisher_feature_overlap(X: Any, y: Any) -> pd.Series:
+    """
+    F1: Fisher's discriminant ratio for each feature.
+    Higher value -> better class separability.
+    Lower value -> more overlap.
+    """
+    X_np = _to_numpy_x(X)
+    y_np = _to_numpy_y(y)
+    feature_names = _get_feature_names(X)
+
+    classes = np.unique(y_np)
+    overall_mean = np.mean(X_np, axis=0)
+
+    numerator = np.zeros(X_np.shape[1], dtype=float)
+    denominator = np.zeros(X_np.shape[1], dtype=float)
 
     for cls in classes:
-        X_c = X[y == cls]
+        X_c = X_np[y_np == cls]
         n_c = X_c.shape[0]
         mean_c = np.mean(X_c, axis=0)
-        var_c = np.var(X_c, axis=0, ddof=1)
+        var_c = np.var(X_c, axis=0, ddof=1) if X_c.shape[0] > 1 else np.zeros(X_np.shape[1])
 
         numerator += n_c * (mean_c - overall_mean) ** 2
         denominator += n_c * var_c
 
     fisher_ratio = numerator / (denominator + 1e-12)
 
-    return pd.Series(fisher_ratio, index=feature_names).sort_values(ascending=False)
+    return pd.Series(fisher_ratio, index=feature_names, name="F1_fisher").sort_values(ascending=False)
 
 
-#f1 (macro), auc, gmean
-#macro recall - насколько хорошо находятся редкие классы
-#balanced accuracy  
-
-
-def volume_of_overlap_region(X, y):
+def fisher_overlap_summary(X: Any, y: Any) -> Dict[str, float]:
     """
-    F2: overlap по диапазонам значений признака.
-    Для многоклассового случая усредняет overlap по всем парам классов.
+    Summary stats for Fisher overlap.
     """
-    if isinstance(X, pd.DataFrame):
-        feature_names = X.columns
-        X = X.values
-    else:
-        X = np.asarray(X)
-        feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+    values = fisher_feature_overlap(X, y)
+    return {
+        "f1_fisher_mean": float(values.mean()),
+        "f1_fisher_max": float(values.max()),
+        "f1_fisher_min": float(values.min()),
+    }
 
-    y = np.asarray(y).squeeze()
-    classes = np.unique(y)
 
+# =========================================================
+# Overlap metrics: F2
+# =========================================================
+
+def volume_of_overlap_region(X: Any, y: Any) -> pd.Series:
+    """
+    F2: overlap by feature ranges.
+    Higher value -> more overlap.
+    """
+    X_np = _to_numpy_x(X)
+    y_np = _to_numpy_y(y)
+    feature_names = _get_feature_names(X)
+
+    classes = np.unique(y_np)
     results = []
 
-    for j in range(X.shape[1]):
+    for j in range(X_np.shape[1]):
         pair_overlaps = []
 
         for c1, c2 in combinations(classes, 2):
-            x1 = X[y == c1, j]
-            x2 = X[y == c2, j]
+            x1 = X_np[y_np == c1, j]
+            x2 = X_np[y_np == c2, j]
 
             min1, max1 = np.min(x1), np.max(x1)
             min2, max2 = np.min(x2), np.max(x2)
@@ -172,85 +142,80 @@ def volume_of_overlap_region(X, y):
 
         results.append(np.mean(pair_overlaps) if pair_overlaps else 0.0)
 
-    return pd.Series(results, index=feature_names).sort_values(ascending=False)
+    return pd.Series(results, index=feature_names, name="F2_overlap").sort_values(ascending=False)
 
 
-
-
-def n3_error_rate(X, y):
+def f2_overlap_summary(X: Any, y: Any) -> Dict[str, float]:
     """
-    N3: leave-one-out error rate для 1-NN.
+    Summary stats for F2 overlap.
     """
-    if isinstance(X, pd.DataFrame):
-        X = X.values
-    else:
-        X = np.asarray(X)
-
-    y = np.asarray(y).squeeze()
-
-    n = len(y)
-    errors = 0
-
-    for i in range(n):
-        X_train = np.delete(X, i, axis=0)
-        y_train = np.delete(y, i)
-
-        X_test = X[i].reshape(1, -1)
-        y_test = y[i]
-
-        knn = KNeighborsClassifier(n_neighbors=1)
-        knn.fit(X_train, y_train)
-        pred = knn.predict(X_test)[0]
-
-        if pred != y_test:
-            errors += 1
-
-    return errors / n
+    values = volume_of_overlap_region(X, y)
+    return {
+        "f2_overlap_mean": float(values.mean()),
+        "f2_overlap_max": float(values.max()),
+        "f2_overlap_min": float(values.min()),
+    }
 
 
-def n3_error_rate_fast(X, y):
+# =========================================================
+# Overlap metrics: N3
+# =========================================================
+
+def n3_error_rate(X: Any, y: Any) -> float:
     """
-    Быстрая версия N3 через ближайших соседей.
+    N3: 1-NN leave-one-out style error using nearest neighbor.
+    Higher value -> more local overlap.
     """
-    if isinstance(X, pd.DataFrame):
-        X = X.values
-    else:
-        X = np.asarray(X)
-
-    y = np.asarray(y).squeeze()
+    X_np = _to_numpy_x(X)
+    y_np = _to_numpy_y(y)
 
     nn = NearestNeighbors(n_neighbors=2)
-    nn.fit(X)
+    nn.fit(X_np)
 
-    distances, indices = nn.kneighbors(X)
-
-    # indices[:, 0] — сама точка
-    # indices[:, 1] — ближайший сосед
+    distances, indices = nn.kneighbors(X_np)
     nearest_neighbor_idx = indices[:, 1]
-    nearest_neighbor_labels = y[nearest_neighbor_idx]
+    nearest_neighbor_labels = y_np[nearest_neighbor_idx]
 
-    error_rate = np.mean(nearest_neighbor_labels != y)
-    return error_rate
+    return float(np.mean(nearest_neighbor_labels != y_np))
 
-def n3_per_class(X, y):
-    if isinstance(X, pd.DataFrame):
-        X = X.values
-    else:
-        X = np.asarray(X)
 
-    y = np.asarray(y).squeeze()
+def n3_per_class(X: Any, y: Any) -> pd.Series:
+    """
+    N3 per class.
+    """
+    X_np = _to_numpy_x(X)
+    y_np = _to_numpy_y(y)
 
     nn = NearestNeighbors(n_neighbors=2)
-    nn.fit(X)
+    nn.fit(X_np)
 
-    distances, indices = nn.kneighbors(X)
+    distances, indices = nn.kneighbors(X_np)
     nearest_neighbor_idx = indices[:, 1]
-    nearest_neighbor_labels = y[nearest_neighbor_idx]
+    nearest_neighbor_labels = y_np[nearest_neighbor_idx]
 
     result = {}
 
-    for cls in np.unique(y):
-        mask = (y == cls)
-        result[cls] = np.mean(nearest_neighbor_labels[mask] != y[mask])
+    for cls in np.unique(y_np):
+        mask = y_np == cls
+        result[cls] = float(np.mean(nearest_neighbor_labels[mask] != y_np[mask]))
 
     return pd.Series(result, name="N3_per_class").sort_values(ascending=False)
+
+
+# =========================================================
+# Combined summary
+# =========================================================
+
+def data_complexity_summary(X: Any, y: Any) -> Dict[str, float]:
+    """
+    Main summary for experiments table.
+    """
+    result = {
+        "ir": float(imbalance_ratio(y)),
+        "n3": float(n3_error_rate(X, y)),
+    }
+
+    result.update(fisher_overlap_summary(X, y))
+    result.update(f2_overlap_summary(X, y))
+
+    return result

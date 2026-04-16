@@ -1,128 +1,178 @@
 import pandas as pd
-import os
+import experiments
+import create_datasets
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from imblearn.pipeline import Pipeline
+from tqdm import tqdm
 
-import metrics
-import resampling
-import models
-import data
+configs = create_datasets.get_synthetic_dataset_configs()
 
-from scipy.io import arff
+all_results = []
+all_data_tables = []
+all_model_tables = []
 
-from collections import Counter
+for num, cfg in enumerate(tqdm(configs), start=1):
+    X, y = create_datasets.generate_dataset_from_config(cfg)
 
-levels = ['easy', 'medium', 'hard']
-base_path = "datasets/overlap"
-os.makedirs(base_path, exist_ok=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        random_state=42,
+        shuffle=True,
+        stratify=y
+    )
 
-for overlap_level in complexity:   
-    config = data.build_synthetic_config(n_samples=,
-        n_features='medium',
-        n_classes='medium',
-        imbalance_level="easy",
-        overlap_level="easy",
-        noise_level="easy",
-        cluster_level="easy",
-        random_state=42))
-        
-#x.to_csv('x.csv', index=False)
-#y.to_csv('y.csv', index=False)
-#x = pd.read_csv("x.csv")
-#y = pd.read_csv("y.csv")
+    # --------------------------------
+    # 0. baseline (без sampler)
+    # --------------------------------
+    baseline_df = experiments.run_baseline_experiments(
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        model_names=["LogisticRegression", "RandomForest"],
+        random_state=42
+    )
 
-x_train, x_test, y_train, y_test = train_test_split(
-    x,y,
-    test_size=0.2,
-    stratify=y,
-    random_state=42
-)
+    baseline_df["dataset_id"] = num
+    baseline_df["dataset_name"] = cfg["name"]
+    baseline_df["group"] = "baseline"
+    baseline_df["ir_level"] = cfg["ir_level"]
+    baseline_df["overlap_level"] = cfg["overlap_level"]
+    baseline_df["cluster_level"] = cfg["cluster_level"]
 
-print(metrics.n3_error_rate_fast(x_train, y_train))
+    data_base, model_base = experiments.split_results_tables(baseline_df)
 
+    data_base["dataset_id"] = num
+    data_base["dataset_name"] = cfg["name"]
+    data_base["group"] = "baseline"
+    data_base["ir_level"] = cfg["ir_level"]
+    data_base["overlap_level"] = cfg["overlap_level"]
+    data_base["cluster_level"] = cfg["cluster_level"]
 
+    model_base["dataset_id"] = num
+    model_base["dataset_name"] = cfg["name"]
+    model_base["group"] = "baseline"
+    model_base["ir_level"] = cfg["ir_level"]
+    model_base["overlap_level"] = cfg["overlap_level"]
+    model_base["cluster_level"] = cfg["cluster_level"]
 
+    all_results.append(baseline_df)
+    all_data_tables.append(data_base)
+    all_model_tables.append(model_base)
 
+    # --------------------------------
+    # 1. smote-variants
+    # --------------------------------
+    results_sv = experiments.run_experiments(
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        sampler_names=[
+            "distance_SMOTE",
+            "cluster_SMOTE",
+            "CBSO",
+            "AHC",
+            "DBSMOTE",
+            "MWMOTE"
+        ],
+        model_names=["LogisticRegression", "RandomForest"],
+        verbose=False
+    )
 
+    results_sv["dataset_id"] = num
+    results_sv["dataset_name"] = cfg["name"]
+    results_sv["group"] = "smote_variants"
+    results_sv["ir_level"] = cfg["ir_level"]
+    results_sv["overlap_level"] = cfg["overlap_level"]
+    results_sv["cluster_level"] = cfg["cluster_level"]
 
+    data_sv, model_sv = experiments.split_results_tables(results_sv)
 
+    data_sv["dataset_id"] = num
+    data_sv["dataset_name"] = cfg["name"]
+    data_sv["group"] = "smote_variants"
+    data_sv["ir_level"] = cfg["ir_level"]
+    data_sv["overlap_level"] = cfg["overlap_level"]
+    data_sv["cluster_level"] = cfg["cluster_level"]
 
+    model_sv["dataset_id"] = num
+    model_sv["dataset_name"] = cfg["name"]
+    model_sv["group"] = "smote_variants"
+    model_sv["ir_level"] = cfg["ir_level"]
+    model_sv["overlap_level"] = cfg["overlap_level"]
+    model_sv["cluster_level"] = cfg["cluster_level"]
 
-"""
-data, meta = arff.loadarff('dataset_41_glass.arff')
-df = pd.DataFrame(data)
-df["Type"] = df["Type"].str.decode("utf-8")
+    all_results.append(results_sv)
+    all_data_tables.append(data_sv)
+    all_model_tables.append(model_sv)
 
-from sklearn.preprocessing import LabelEncoder
+    # --------------------------------
+    # 2. imbalanced-learn
+    # --------------------------------
+    results_imbl = experiments.run_experiments(
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        sampler_names=[
+            "SMOTE",
+            "BorderlineSMOTE",
+            "SVMSMOTE",
+            "ADASYN",
+            "KMeansSMOTE"
+        ],
+        model_names=["LogisticRegression", "RandomForest"],
+        sampler_param_grid={
+            "SMOTE": {"k_neighbors": 3},
+            "ADASYN": {"n_neighbors": 3}
+        },
+        verbose=False
+    )
 
-le = LabelEncoder()
-y = le.fit_transform(df["Type"])
-x = df.drop(columns="Type")
+    results_imbl["dataset_id"] = num
+    results_imbl["dataset_name"] = cfg["name"]
+    results_imbl["group"] = "imbalanced_learn"
+    results_imbl["ir_level"] = cfg["ir_level"]
+    results_imbl["overlap_level"] = cfg["overlap_level"]
+    results_imbl["cluster_level"] = cfg["cluster_level"]
 
-from sklearn.model_selection import train_test_split
+    data_imbl, model_imbl = experiments.split_results_tables(results_imbl)
 
-x_train, x_test, y_train, y_test = train_test_split(
-    x,y,
-    test_size=0.2,
-    stratify=y,
-    random_state=42
-)
+    data_imbl["dataset_id"] = num
+    data_imbl["dataset_name"] = cfg["name"]
+    data_imbl["group"] = "imbalanced_learn"
+    data_imbl["ir_level"] = cfg["ir_level"]
+    data_imbl["overlap_level"] = cfg["overlap_level"]
+    data_imbl["cluster_level"] = cfg["cluster_level"]
 
-print(metrics.n3_per_class(x_train, y_train))
+    model_imbl["dataset_id"] = num
+    model_imbl["dataset_name"] = cfg["name"]
+    model_imbl["group"] = "imbalanced_learn"
+    model_imbl["ir_level"] = cfg["ir_level"]
+    model_imbl["overlap_level"] = cfg["overlap_level"]
+    model_imbl["cluster_level"] = cfg["cluster_level"]
 
-metrics.plot_before_resampling('glass', x_train, y_train)
+    all_results.append(results_imbl)
+    all_data_tables.append(data_imbl)
+    all_model_tables.append(model_imbl)
 
+# ---------------------------------
+# Объединяем всё
+# ---------------------------------
+all_results_df = pd.concat(all_results, ignore_index=True)
+all_data_df = pd.concat(all_data_tables, ignore_index=True)
+all_model_df = pd.concat(all_model_tables, ignore_index=True)
 
+# ---------------------------------
+# Сохраняем
+# ---------------------------------
+all_results_df.to_csv("all_results_full.csv", index=False)
+all_data_df.to_csv("all_data_metrics.csv", index=False)
+all_model_df.to_csv("all_model_metrics.csv", index=False)
 
-X_new, y_new = data_loader.increase_overlap_adasyn(
-    x_train,
-    y_train,
-    n_neighbors=3,
-    sampling_strategy='not majority',
-    random_state=42
-)
-print(metrics.n3_error_rate(X_new, y_new))
-
-metrics.plot_before_resampling('glass_after_overlap_adasyn', X_new, y_new)
-"""
-
-"""for k in [2, 5, 10]:
-    X_new, y_new = data_loader.increase_overlap_smote(x_train, y_train, k_neighbors=k)
-    
-    print(f"k_neighbors = {k}")
-    print(metrics.n3_error_rate(X_new, y_new))
-
-    metrics.plot_before_resampling(f'glass_after_overlap{k}', X_new, y_new)
-"""
-"""x_new, y_new = data_loader.increase_multiclass_imblance(x_train, y_train, 0.5)
-
-print(metrics.count_IR(y_new))
-print(Counter(y_train), Counter(y_new))"""
-"""col = Counter(y_train)
-min_key, min_count = min(col.items(), key=itemgetter(1))
-print(f"min key:{min_key}, min_count:{min_count}")
-print(col)"""
-""" 
-results = []
-
-for sampler in resampling.samplers:
-    for model in models.list_models:
-        pipe = Pipeline([
-            ("scaler", StandardScaler()),
-            ("sampler", sampler),
-            ("model", model)
-        ])
-
-        pipe.fit(x_train, y_train)
-
-        y_pred = pipe.predict(x_test)
-        y_proba = pipe.predict_proba(x_test)
-
-        print(metrics.evaluate_model(y_test, y_pred, y_proba))
-        metrics.plot_after_resampling(metrics.plot_before_resampling("glass", x_train, y_train),sampler, x_train, y_train)
-
-#result = pd.DataFrame(results)
-#print(result.head())
-"""
+print("Готово!")
+print("all_results_df:", all_results_df.shape)
+print("all_data_df:", all_data_df.shape)
+print("all_model_df:", all_model_df.shape)
