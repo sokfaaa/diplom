@@ -1,0 +1,37 @@
+{
+  "name": "pmlb_calendarDOW",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "calendarDOW",
+  "original_name": "calendarDOW",
+  "base_type": "real_pmlb",
+  "n_samples_total": 399,
+  "n_samples_train": 319,
+  "n_samples_test": 80,
+  "n_features": 32,
+  "n_classes": 5,
+  "imbalance_ratio": 2.1818,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.109717868338558,
+    0.20689655172413793,
+    0.23824451410658307,
+    0.2413793103448276,
+    0.20376175548589343
+  ],
+  "class_counts_train": [
+    35,
+    66,
+    76,
+    77,
+    65
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,33 @@
+{
+  "name": "openml_46601_Cirrhosis_Patient_Survival_Pre",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46601",
+  "original_name": "Cirrhosis_Patient_Survival_Prediction",
+  "base_type": "real_openml",
+  "n_samples_total": 418,
+  "n_samples_train": 334,
+  "n_samples_test": 84,
+  "n_features": 17,
+  "n_classes": 3,
+  "imbalance_ratio": 9.28,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.5538922155688623,
+    0.059880239520958084,
+    0.38622754491017963
+  ],
+  "class_counts_train": [
+    185,
+    20,
+    129
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

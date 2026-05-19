@@ -1,0 +1,39 @@
+{
+  "name": "openml_46184_Flare",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46184",
+  "original_name": "Flare",
+  "base_type": "real_openml",
+  "n_samples_total": 1066,
+  "n_samples_train": 852,
+  "n_samples_test": 214,
+  "n_features": 11,
+  "n_classes": 6,
+  "imbalance_ratio": 7.6977,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.13732394366197184,
+    0.1983568075117371,
+    0.22417840375586853,
+    0.0892018779342723,
+    0.03990610328638498,
+    0.31103286384976525
+  ],
+  "class_counts_train": [
+    117,
+    169,
+    191,
+    76,
+    34,
+    265
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

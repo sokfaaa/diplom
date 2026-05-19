@@ -1,0 +1,33 @@
+{
+  "name": "pmlb_ann_thyroid",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "ann_thyroid",
+  "original_name": "ann_thyroid",
+  "base_type": "real_pmlb",
+  "n_samples_total": 7200,
+  "n_samples_train": 5760,
+  "n_samples_test": 1440,
+  "n_features": 21,
+  "n_classes": 3,
+  "imbalance_ratio": 40.1566,
+  "ir_zone": "severe",
+  "actual_weights": [
+    0.02309027777777778,
+    0.051041666666666666,
+    0.9258680555555555
+  ],
+  "class_counts_train": [
+    133,
+    294,
+    5333
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

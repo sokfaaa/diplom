@@ -1,0 +1,35 @@
+{
+  "name": "pmlb_nursery",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "nursery",
+  "original_name": "nursery",
+  "base_type": "real_pmlb",
+  "n_samples_total": 12958,
+  "n_samples_train": 10366,
+  "n_samples_test": 2592,
+  "n_features": 8,
+  "n_classes": 4,
+  "imbalance_ratio": 13.1707,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.33339764615087786,
+    0.32924946941925526,
+    0.312077947134864,
+    0.025274937295002894
+  ],
+  "class_counts_train": [
+    3456,
+    3413,
+    3235,
+    262
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

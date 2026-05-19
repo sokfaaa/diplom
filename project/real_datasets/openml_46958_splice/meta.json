@@ -1,0 +1,33 @@
+{
+  "name": "openml_46958_splice",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46958",
+  "original_name": "splice",
+  "base_type": "real_openml",
+  "n_samples_total": 3190,
+  "n_samples_train": 2552,
+  "n_samples_test": 638,
+  "n_features": 60,
+  "n_classes": 3,
+  "imbalance_ratio": 2.1578,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.24059561128526646,
+    0.24059561128526646,
+    0.5188087774294671
+  ],
+  "class_counts_train": [
+    614,
+    614,
+    1324
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

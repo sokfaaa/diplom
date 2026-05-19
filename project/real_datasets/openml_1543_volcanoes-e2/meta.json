@@ -1,0 +1,37 @@
+{
+  "name": "openml_1543_volcanoes-e2",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "1543",
+  "original_name": "volcanoes-e2",
+  "base_type": "real_openml",
+  "n_samples_total": 1080,
+  "n_samples_train": 864,
+  "n_samples_test": 216,
+  "n_features": 3,
+  "n_classes": 5,
+  "imbalance_ratio": 123.0,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.9108796296296297,
+    0.006944444444444444,
+    0.017361111111111112,
+    0.047453703703703706,
+    0.017361111111111112
+  ],
+  "class_counts_train": [
+    787,
+    6,
+    15,
+    41,
+    15
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

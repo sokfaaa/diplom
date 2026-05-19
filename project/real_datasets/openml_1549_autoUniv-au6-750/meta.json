@@ -1,0 +1,43 @@
+{
+  "name": "openml_1549_autoUniv-au6-750",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "1549",
+  "original_name": "autoUniv-au6-750",
+  "base_type": "real_openml",
+  "n_samples_total": 750,
+  "n_samples_train": 600,
+  "n_samples_test": 150,
+  "n_features": 40,
+  "n_classes": 8,
+  "imbalance_ratio": 2.8947,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.105,
+    0.09666666666666666,
+    0.22,
+    0.19833333333333333,
+    0.07666666666666666,
+    0.11833333333333333,
+    0.08833333333333333,
+    0.09666666666666666
+  ],
+  "class_counts_train": [
+    63,
+    58,
+    132,
+    119,
+    46,
+    71,
+    53,
+    58
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

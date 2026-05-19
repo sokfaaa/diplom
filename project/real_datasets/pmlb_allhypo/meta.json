@@ -1,0 +1,33 @@
+{
+  "name": "pmlb_allhypo",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "allhypo",
+  "original_name": "allhypo",
+  "base_type": "real_pmlb",
+  "n_samples_total": 3770,
+  "n_samples_train": 3016,
+  "n_samples_test": 754,
+  "n_features": 29,
+  "n_classes": 3,
+  "imbalance_ratio": 36.6421,
+  "ir_zone": "severe",
+  "actual_weights": [
+    0.05139257294429708,
+    0.9234084880636605,
+    0.025198938992042442
+  ],
+  "class_counts_train": [
+    155,
+    2785,
+    76
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

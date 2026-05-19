@@ -1,0 +1,39 @@
+{
+  "name": "openml_182_satimage",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "182",
+  "original_name": "satimage",
+  "base_type": "real_openml",
+  "n_samples_total": 6430,
+  "n_samples_train": 5144,
+  "n_samples_test": 1286,
+  "n_features": 36,
+  "n_classes": 6,
+  "imbalance_ratio": 2.4496,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.2381415241057543,
+    0.10925349922239502,
+    0.2109253499222395,
+    0.09720062208398134,
+    0.11003110419906688,
+    0.234447900466563
+  ],
+  "class_counts_train": [
+    1225,
+    562,
+    1085,
+    500,
+    566,
+    1206
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

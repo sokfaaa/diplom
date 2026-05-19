@@ -1,0 +1,35 @@
+{
+  "name": "openml_46879_mental_health_detection",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46879",
+  "original_name": "mental_health_detection",
+  "base_type": "real_openml",
+  "n_samples_total": 540,
+  "n_samples_train": 432,
+  "n_samples_test": 108,
+  "n_features": 14,
+  "n_classes": 4,
+  "imbalance_ratio": 1.4746,
+  "ir_zone": "balanced",
+  "actual_weights": [
+    0.2361111111111111,
+    0.2222222222222222,
+    0.32175925925925924,
+    0.2199074074074074
+  ],
+  "class_counts_train": [
+    102,
+    96,
+    139,
+    95
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,33 @@
+{
+  "name": "openml_46441_Credit_Score_Classification",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46441",
+  "original_name": "Credit_Score_Classification",
+  "base_type": "real_openml",
+  "n_samples_total": 100000,
+  "n_samples_train": 80000,
+  "n_samples_test": 20000,
+  "n_features": 27,
+  "n_classes": 3,
+  "imbalance_ratio": 2.9826,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.178275,
+    0.2899875,
+    0.5317375
+  ],
+  "class_counts_train": [
+    14262,
+    23199,
+    42539
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,37 @@
+{
+  "name": "openml_4538_GesturePhaseSegmentationProces",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "4538",
+  "original_name": "GesturePhaseSegmentationProcessed",
+  "base_type": "real_openml",
+  "n_samples_total": 9873,
+  "n_samples_train": 7898,
+  "n_samples_test": 1975,
+  "n_features": 32,
+  "n_classes": 5,
+  "imbalance_ratio": 2.9559,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.2776652317042289,
+    0.10103823752848823,
+    0.21233223600911624,
+    0.1101544694859458,
+    0.29880982527222083
+  ],
+  "class_counts_train": [
+    2193,
+    798,
+    1677,
+    870,
+    2360
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

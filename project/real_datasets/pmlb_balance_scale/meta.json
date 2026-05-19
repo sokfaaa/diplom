@@ -1,0 +1,33 @@
+{
+  "name": "pmlb_balance_scale",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "balance_scale",
+  "original_name": "balance_scale",
+  "base_type": "real_pmlb",
+  "n_samples_total": 625,
+  "n_samples_train": 500,
+  "n_samples_test": 125,
+  "n_features": 4,
+  "n_classes": 3,
+  "imbalance_ratio": 5.8776,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.078,
+    0.46,
+    0.462
+  ],
+  "class_counts_train": [
+    39,
+    230,
+    231
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

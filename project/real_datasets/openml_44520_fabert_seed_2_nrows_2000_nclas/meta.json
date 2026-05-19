@@ -1,0 +1,41 @@
+{
+  "name": "openml_44520_fabert_seed_2_nrows_2000_nclas",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "44520",
+  "original_name": "fabert_seed_2_nrows_2000_nclasses_10_ncols_100_stratify_True",
+  "base_type": "real_openml",
+  "n_samples_total": 2000,
+  "n_samples_train": 1600,
+  "n_samples_test": 400,
+  "n_features": 100,
+  "n_classes": 7,
+  "imbalance_ratio": 3.8361,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.113125,
+    0.17375,
+    0.234375,
+    0.18375,
+    0.11875,
+    0.115,
+    0.06125
+  ],
+  "class_counts_train": [
+    181,
+    278,
+    375,
+    294,
+    190,
+    184,
+    98
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

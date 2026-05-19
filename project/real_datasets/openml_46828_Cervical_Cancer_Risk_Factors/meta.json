@@ -1,0 +1,37 @@
+{
+  "name": "openml_46828_Cervical_Cancer_Risk_Factors",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46828",
+  "original_name": "Cervical_Cancer_Risk_Factors",
+  "base_type": "real_openml",
+  "n_samples_total": 858,
+  "n_samples_train": 686,
+  "n_samples_test": 172,
+  "n_features": 32,
+  "n_classes": 5,
+  "imbalance_ratio": 75.6,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.880466472303207,
+    0.0641399416909621,
+    0.011661807580174927,
+    0.02040816326530612,
+    0.023323615160349854
+  ],
+  "class_counts_train": [
+    604,
+    44,
+    8,
+    14,
+    16
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,35 @@
+{
+  "name": "pmlb_allrep",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "allrep",
+  "original_name": "allrep",
+  "base_type": "real_pmlb",
+  "n_samples_total": 3772,
+  "n_samples_train": 3017,
+  "n_samples_test": 755,
+  "n_features": 29,
+  "n_classes": 4,
+  "imbalance_ratio": 107.2941,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.9671859463042758,
+    0.008949287371561154,
+    0.009943652635067949,
+    0.013921113689095127
+  ],
+  "class_counts_train": [
+    2918,
+    27,
+    30,
+    42
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,35 @@
+{
+  "name": "openml_46839_Student_Performance_on_an_Entr",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46839",
+  "original_name": "Student_Performance_on_an_Entrance_Examination",
+  "base_type": "real_openml",
+  "n_samples_total": 666,
+  "n_samples_train": 532,
+  "n_samples_test": 134,
+  "n_features": 11,
+  "n_classes": 4,
+  "imbalance_ratio": 2.0792,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.2349624060150376,
+    0.15225563909774437,
+    0.3157894736842105,
+    0.29699248120300753
+  ],
+  "class_counts_train": [
+    125,
+    81,
+    168,
+    158
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

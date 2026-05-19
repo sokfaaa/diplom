@@ -1,0 +1,33 @@
+{
+  "name": "openml_44614_cmc_seed_1_nrows_2000_nclasses",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "44614",
+  "original_name": "cmc_seed_1_nrows_2000_nclasses_10_ncols_100_stratify_True",
+  "base_type": "real_openml",
+  "n_samples_total": 1473,
+  "n_samples_train": 1178,
+  "n_samples_test": 295,
+  "n_features": 9,
+  "n_classes": 3,
+  "imbalance_ratio": 1.8889,
+  "ir_zone": "balanced",
+  "actual_weights": [
+    0.42699490662139217,
+    0.22580645161290322,
+    0.3471986417657046
+  ],
+  "class_counts_train": [
+    503,
+    266,
+    409
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

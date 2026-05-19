@@ -1,0 +1,33 @@
+{
+  "name": "openml_46515_Financial-Risk-Assessment-Prep",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46515",
+  "original_name": "Financial-Risk-Assessment-Preprocessed",
+  "base_type": "real_openml",
+  "n_samples_total": 15000,
+  "n_samples_train": 12000,
+  "n_samples_test": 3000,
+  "n_features": 21,
+  "n_classes": 3,
+  "imbalance_ratio": 6.0,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.6,
+    0.3,
+    0.1
+  ],
+  "class_counts_train": [
+    7200,
+    3600,
+    1200
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

@@ -1,0 +1,33 @@
+{
+  "name": "openml_46507_Interest_Rate",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46507",
+  "original_name": "Interest_Rate",
+  "base_type": "real_openml",
+  "n_samples_total": 32862,
+  "n_samples_train": 26289,
+  "n_samples_test": 6573,
+  "n_features": 12,
+  "n_classes": 3,
+  "imbalance_ratio": 2.0929,
+  "ir_zone": "mild",
+  "actual_weights": [
+    0.20540910647038685,
+    0.42987561337441516,
+    0.364715280155198
+  ],
+  "class_counts_train": [
+    5400,
+    11301,
+    9588
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

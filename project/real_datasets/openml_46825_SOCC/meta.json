@@ -1,0 +1,35 @@
+{
+  "name": "openml_46825_SOCC",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46825",
+  "original_name": "SOCC",
+  "base_type": "real_openml",
+  "n_samples_total": 1043,
+  "n_samples_train": 834,
+  "n_samples_test": 209,
+  "n_features": 15,
+  "n_classes": 4,
+  "imbalance_ratio": 118.4286,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.7949640287769785,
+    0.1642685851318945,
+    0.03357314148681055,
+    0.007194244604316547
+  ],
+  "class_counts_train": [
+    663,
+    137,
+    28,
+    6
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

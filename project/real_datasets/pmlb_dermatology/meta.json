@@ -1,0 +1,39 @@
+{
+  "name": "pmlb_dermatology",
+  "group": "real_pmlb",
+  "source": "pmlb",
+  "source_id": "dermatology",
+  "original_name": "dermatology",
+  "base_type": "real_pmlb",
+  "n_samples_total": 366,
+  "n_samples_train": 292,
+  "n_samples_test": 74,
+  "n_features": 34,
+  "n_classes": 6,
+  "imbalance_ratio": 5.6,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.3047945205479452,
+    0.1678082191780822,
+    0.1952054794520548,
+    0.13356164383561644,
+    0.14383561643835616,
+    0.0547945205479452
+  ],
+  "class_counts_train": [
+    89,
+    49,
+    57,
+    39,
+    42,
+    16
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

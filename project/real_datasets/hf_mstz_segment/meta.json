@@ -1,0 +1,41 @@
+{
+  "name": "hf_mstz_segment",
+  "group": "real_huggingface",
+  "source": "huggingface",
+  "source_id": "mstz/segment",
+  "original_name": "mstz/segment",
+  "base_type": "real_huggingface",
+  "n_samples_total": 2310,
+  "n_samples_train": 1848,
+  "n_samples_test": 462,
+  "n_features": 18,
+  "n_classes": 7,
+  "imbalance_ratio": 1.0,
+  "ir_zone": "balanced",
+  "actual_weights": [
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14285714285714285,
+    0.14285714285714285
+  ],
+  "class_counts_train": [
+    264,
+    264,
+    264,
+    264,
+    264,
+    264,
+    264
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

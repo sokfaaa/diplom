@@ -1,0 +1,37 @@
+{
+  "name": "openml_46831_HCV_data",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46831",
+  "original_name": "HCV_data",
+  "base_type": "real_openml",
+  "n_samples_total": 615,
+  "n_samples_train": 492,
+  "n_samples_test": 123,
+  "n_features": 12,
+  "n_classes": 5,
+  "imbalance_ratio": 76.1429,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.8658536585365854,
+    0.012195121951219513,
+    0.03861788617886179,
+    0.034552845528455285,
+    0.04878048780487805
+  ],
+  "class_counts_train": [
+    426,
+    6,
+    19,
+    17,
+    24
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

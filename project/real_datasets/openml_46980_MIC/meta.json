@@ -1,0 +1,43 @@
+{
+  "name": "openml_46980_MIC",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46980",
+  "original_name": "MIC",
+  "base_type": "real_openml",
+  "n_samples_total": 1699,
+  "n_samples_train": 1359,
+  "n_samples_test": 340,
+  "n_features": 111,
+  "n_classes": 8,
+  "imbalance_ratio": 119.0,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.8403237674760854,
+    0.016188373804267846,
+    0.06475349521707138,
+    0.03164091243561442,
+    0.013245033112582781,
+    0.010301692420897719,
+    0.007358351729212656,
+    0.016188373804267846
+  ],
+  "class_counts_train": [
+    1142,
+    22,
+    88,
+    43,
+    18,
+    14,
+    10,
+    22
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

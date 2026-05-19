@@ -1,0 +1,37 @@
+{
+  "name": "openml_46901_TESTFORDESCRIPTION-anneal",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "46901",
+  "original_name": "TESTFORDESCRIPTION-anneal",
+  "base_type": "real_openml",
+  "n_samples_total": 898,
+  "n_samples_train": 718,
+  "n_samples_test": 180,
+  "n_features": 38,
+  "n_classes": 5,
+  "imbalance_ratio": 85.5,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.008356545961002786,
+    0.11002785515320335,
+    0.7618384401114207,
+    0.07520891364902507,
+    0.04456824512534819
+  ],
+  "class_counts_train": [
+    6,
+    79,
+    547,
+    54,
+    32
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

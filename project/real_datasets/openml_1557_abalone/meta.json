@@ -1,0 +1,33 @@
+{
+  "name": "openml_1557_abalone",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "1557",
+  "original_name": "abalone",
+  "base_type": "real_openml",
+  "n_samples_total": 4177,
+  "n_samples_train": 3341,
+  "n_samples_test": 836,
+  "n_features": 8,
+  "n_classes": 3,
+  "imbalance_ratio": 1.0937,
+  "ir_zone": "balanced",
+  "actual_weights": [
+    0.33702484286141876,
+    0.31667165519305596,
+    0.3463035019455253
+  ],
+  "class_counts_train": [
+    1126,
+    1058,
+    1157
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

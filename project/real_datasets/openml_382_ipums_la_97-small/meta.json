@@ -1,0 +1,43 @@
+{
+  "name": "openml_382_ipums_la_97-small",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "382",
+  "original_name": "ipums_la_97-small",
+  "base_type": "real_openml",
+  "n_samples_total": 7019,
+  "n_samples_train": 5615,
+  "n_samples_test": 1404,
+  "n_features": 60,
+  "n_classes": 8,
+  "imbalance_ratio": 7.5116,
+  "ir_zone": "moderate",
+  "actual_weights": [
+    0.27604630454140694,
+    0.12377560106856635,
+    0.07515583259127337,
+    0.12662511130899376,
+    0.1748886910062333,
+    0.14247551202137132,
+    0.04416740872662511,
+    0.03686553873552983
+  ],
+  "class_counts_train": [
+    1550,
+    695,
+    422,
+    711,
+    982,
+    800,
+    248,
+    207
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}

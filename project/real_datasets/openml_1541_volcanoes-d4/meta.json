@@ -1,0 +1,37 @@
+{
+  "name": "openml_1541_volcanoes-d4",
+  "group": "real_openml",
+  "source": "openml",
+  "source_id": "1541",
+  "original_name": "volcanoes-d4",
+  "base_type": "real_openml",
+  "n_samples_total": 8654,
+  "n_samples_train": 6923,
+  "n_samples_test": 1731,
+  "n_features": 3,
+  "n_classes": 5,
+  "imbalance_ratio": 145.7679,
+  "ir_zone": "extreme",
+  "actual_weights": [
+    0.9432327025855843,
+    0.0065000722230247,
+    0.013289036544850499,
+    0.027300303336703743,
+    0.009677885309836777
+  ],
+  "class_counts_train": [
+    6530,
+    45,
+    92,
+    189,
+    67
+  ],
+  "noise": 0.0,
+  "overlap": 0.0,
+  "noise_type": null,
+  "noise_scale": 0.0,
+  "outlier_frac": 0.0,
+  "spatial_distortion": false,
+  "target_weights": null,
+  "random_state": 42
+}
