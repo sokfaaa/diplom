@@ -1,3 +1,16 @@
+"""
+DataBalance — расширенное приложение для балансировки данных | Streamlit
+Запуск: streamlit run app.py
+
+Новые возможности:
+  - Оценка влияния балансировки на ML (LR, RF, XGBoost)
+  - Таблица сравнения метрик + Confusion Matrix + Precision-Recall Curve
+  - Настройка параметров моделей
+  - Визуализация в пространстве низкой размерности (PCA, t-SNE)
+  - Сравнение нескольких методов балансировки (2-4)
+  - История операций
+"""
+
 import io
 import json
 import random
@@ -40,23 +53,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Стили (светлая тема) ───────────────────────────────────────────────────
+# ── Стили ─────────────────────────────────────────────────────────────────
 
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
 
 :root {
-    --bg:       #fafafc;
-    --surface:  #ffffff;
-    --border:   #e5e7eb;
-    --accent:   #6366f1;
-    --accent2:  #ec489a;
-    --accent3:  #14b8a6;
-    --text:     #111827;
-    --muted:    #6b7280;
-    --success:  #10b981;
-    --warning:  #f59e0b;
+    --bg:       #0d0d0f;
+    --surface:  #141418;
+    --border:   #2a2a35;
+    --accent:   #7c6aff;
+    --accent2:  #ff6a9b;
+    --accent3:  #6affd4;
+    --text:     #e8e8f0;
+    --muted:    #6b6b80;
+    --success:  #4ade80;
+    --warning:  #fbbf24;
 }
 
 html, body, [class*="css"] {
@@ -93,18 +106,17 @@ html, body, [class*="css"] {
 .step-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .step-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 3px;
+    height: 2px;
     background: linear-gradient(90deg, var(--accent), var(--accent2));
 }
 .step-label {
@@ -132,7 +144,7 @@ html, body, [class*="css"] {
 .metric-box {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.8rem 1.2rem;
     flex: 1;
     min-width: 120px;
@@ -164,14 +176,14 @@ html, body, [class*="css"] {
     margin: 0.2rem;
     border: 1px solid;
 }
-.rec-top   { background: rgba(99,102,241,0.1); border-color: var(--accent);  color: var(--accent);  }
-.rec-over  { background: rgba(20,184,166,0.1); border-color: var(--accent3); color: var(--accent3); }
-.rec-under { background: rgba(236,72,153,0.1); border-color: var(--accent2); color: var(--accent2); }
+.rec-top   { background: rgba(124,106,255,0.15); border-color: var(--accent);  color: var(--accent);  }
+.rec-over  { background: rgba(106,255,212,0.10); border-color: var(--accent3); color: var(--accent3); }
+.rec-under { background: rgba(255,106,155,0.10); border-color: var(--accent2); color: var(--accent2); }
 
 .history-item {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.8rem 1rem;
     margin-bottom: 0.5rem;
     font-size: 0.8rem;
@@ -182,23 +194,23 @@ html, body, [class*="css"] {
     letter-spacing: 0.05em;
 }
 
-.stDataFrame { border-radius: 12px; overflow: hidden; }
+.stDataFrame { border-radius: 8px; overflow: hidden; }
 
 .stButton > button {
     font-family: 'Syne', sans-serif !important;
     font-weight: 700 !important;
     letter-spacing: 0.05em !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     border: 1px solid var(--accent) !important;
-    background: white !important;
+    background: rgba(124,106,255,0.1) !important;
     color: var(--accent) !important;
     transition: all 0.2s !important;
     padding: 0.5rem 1.5rem !important;
 }
 .stButton > button:hover {
-    background: rgba(99,102,241,0.1) !important;
+    background: rgba(124,106,255,0.25) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 4px 20px rgba(124,106,255,0.3) !important;
 }
 
 hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
@@ -209,7 +221,7 @@ section[data-testid="stSidebar"] {
 }
 section[data-testid="stSidebar"] * { color: var(--text) !important; }
 
-.stAlert { border-radius: 12px !important; background: var(--bg) !important; border-left-color: var(--accent) !important; }
+.stAlert { border-radius: 8px !important; }
 
 .stDownloadButton > button {
     font-family: 'Syne', sans-serif !important;
@@ -217,14 +229,14 @@ section[data-testid="stSidebar"] * { color: var(--text) !important; }
     background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
     color: white !important;
     border: none !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     padding: 0.6rem 2rem !important;
     transition: all 0.2s !important;
 }
 .stDownloadButton > button:hover {
     opacity: 0.9 !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 6px 20px rgba(99,102,241,0.3) !important;
+    box-shadow: 0 6px 24px rgba(124,106,255,0.4) !important;
 }
 
 .divider {
@@ -234,9 +246,9 @@ section[data-testid="stSidebar"] * { color: var(--text) !important; }
 }
 
 .best-badge {
-    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(20,184,166,0.1));
+    background: linear-gradient(135deg, rgba(124,106,255,0.3), rgba(106,255,212,0.2));
     border: 1px solid var(--accent3);
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 0.2rem 0.6rem;
     font-size: 0.7rem;
     color: var(--accent3);
@@ -271,17 +283,16 @@ COMBINE_METHODS = {
 
 ALL_SAMPLERS = list(OVERSAMPLING_METHODS) + list(UNDERSAMPLING_METHODS) + list(COMBINE_METHODS)
 
-# Светлая тема для Plotly
 PLOTLY_THEME = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="DM Mono, monospace", color="#1f2937"),
+    font=dict(family="DM Mono, monospace", color="#e8e8f0"),
     margin=dict(t=40, b=20, l=20, r=20),
 )
-COLORS = ["#6366f1", "#ec489a", "#14b8a6", "#f59e0b", "#3b82f6",
-          "#f472b6", "#10b981", "#fb923c", "#a78bfa", "#e879f9"]
+COLORS = ["#7c6aff", "#ff6a9b", "#6affd4", "#fbbf24", "#60a5fa",
+          "#f472b6", "#34d399", "#fb923c", "#a78bfa", "#e879f9"]
 
-MODEL_COLORS = {"Logistic Regression": "#6366f1", "Random Forest": "#14b8a6", "XGBoost": "#ec489a"}
+MODEL_COLORS = {"Logistic Regression": "#7c6aff", "Random Forest": "#6affd4", "XGBoost": "#ff6a9b"}
 
 
 # ── Вспомогательные функции ───────────────────────────────────────────────
@@ -329,9 +340,9 @@ def make_pie(dist, title, colors):
     values = list(dist.values())
     fig = go.Figure(go.Pie(
         labels=labels, values=values,
-        marker=dict(colors=colors[:len(labels)], line=dict(color="white", width=2)),
+        marker=dict(colors=colors[:len(labels)], line=dict(color="#0d0d0f", width=2)),
         hole=0.45,
-        textfont=dict(family="DM Mono, monospace", size=12, color="#1f2937"),
+        textfont=dict(family="DM Mono, monospace", size=12),
         hovertemplate="<b>Класс %{label}</b><br>Кол-во: %{value}<br>Доля: %{percent}<extra></extra>",
     ))
     fig.update_layout(title=dict(text=title, font=dict(family="Syne, sans-serif", size=14)),
@@ -344,15 +355,15 @@ def make_bar(dist_before, dist_after):
     fig = go.Figure()
     fig.add_trace(go.Bar(name="До балансировки", x=[str(c) for c in classes],
                          y=[dist_before.get(c, 0) for c in classes],
-                         marker_color="#6366f1", marker_line=dict(color="white", width=1)))
+                         marker_color="#7c6aff", marker_line=dict(color="#0d0d0f", width=1)))
     fig.add_trace(go.Bar(name="После балансировки", x=[str(c) for c in classes],
                          y=[dist_after.get(c, 0) for c in classes],
-                         marker_color="#14b8a6", marker_line=dict(color="white", width=1)))
+                         marker_color="#6affd4", marker_line=dict(color="#0d0d0f", width=1)))
     fig.update_layout(barmode="group", xaxis_title="Класс", yaxis_title="Кол-во объектов",
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                       height=360, **PLOTLY_THEME)
-    fig.update_xaxes(gridcolor="#e5e7eb", zeroline=False)
-    fig.update_yaxes(gridcolor="#e5e7eb", zeroline=False)
+    fig.update_xaxes(gridcolor="#2a2a35", zeroline=False)
+    fig.update_yaxes(gridcolor="#2a2a35", zeroline=False)
     return fig
 
 
@@ -385,6 +396,7 @@ def apply_sampler(X, y, method_name, random_state=42):
 
 
 def get_models(params: dict):
+    """Возвращает словарь моделей с заданными параметрами."""
     lr_params  = params.get("lr", {})
     rf_params  = params.get("rf", {})
     xgb_params = params.get("xgb", {})
@@ -395,21 +407,20 @@ def get_models(params: dict):
     }
 
 
-# ── ИСПРАВЛЕНИЕ 1: принудительное приведение к numeric, защита от object-колонок ──
 def prepare_X_y(df, target, num_cols):
-    X_df = df[num_cols].apply(pd.to_numeric, errors="coerce")
-    X = X_df.fillna(X_df.median()).values
+    X = df[num_cols].fillna(df[num_cols].median()).values
     y_ser = df[target]
     le = None
     if y_ser.dtype == object or str(y_ser.dtype) == "category":
         le = LabelEncoder()
-        y = le.fit_transform(y_ser.astype(str))
+        y = le.fit_transform(y_ser)
     else:
         y = y_ser.values
     return X, y, le
 
 
 def evaluate_models(X_train, X_test, y_train, y_test, model_params: dict):
+    """Обучает LR, RF, XGB и возвращает метрики + объекты для графиков."""
     scaler = StandardScaler()
     X_tr_s = scaler.fit_transform(X_train)
     X_te_s = scaler.transform(X_test)
@@ -424,26 +435,15 @@ def evaluate_models(X_train, X_test, y_train, y_test, model_params: dict):
         if binary and hasattr(model, "predict_proba"):
             y_prob = model.predict_proba(X_te_s)[:, 1]
 
-        cm  = confusion_matrix(y_test, y_pred)
+        cm = confusion_matrix(y_test, y_pred)
         acc = accuracy_score(y_test, y_pred)
         f1  = f1_score(y_test, y_pred, average="weighted")
-
-        # ── ИСПРАВЛЕНИЕ 2: защита ROC-AUC от единственного класса в тесте ──
-        auc = None
-        if binary and y_prob is not None:
-            try:
-                auc = roc_auc_score(y_test, y_prob)
-            except ValueError:
-                auc = None
-
+        auc = roc_auc_score(y_test, y_prob) if (binary and y_prob is not None) else None
         pr_data = None
         if binary and y_prob is not None:
-            try:
-                prec, rec, thr = precision_recall_curve(y_test, y_prob)
-                ap = average_precision_score(y_test, y_prob)
-                pr_data = {"precision": prec, "recall": rec, "threshold": thr, "ap": ap}
-            except ValueError:
-                pr_data = None
+            prec, rec, thr = precision_recall_curve(y_test, y_prob)
+            ap = average_precision_score(y_test, y_prob)
+            pr_data = {"precision": prec, "recall": rec, "threshold": thr, "ap": ap}
 
         report = classification_report(y_test, y_pred, output_dict=True)
         results[name] = {
@@ -462,8 +462,8 @@ def evaluate_models(X_train, X_test, y_train, y_test, model_params: dict):
 def plot_confusion_matrix(cm, title, classes):
     fig = go.Figure(go.Heatmap(
         z=cm, x=[str(c) for c in classes], y=[str(c) for c in classes],
-        colorscale=[[0, "#f3f4f6"], [0.5, "#c7d2fe"], [1, "#6366f1"]],
-        text=cm, texttemplate="%{text}", textfont={"color": "#111827"},
+        colorscale=[[0, "#0d0d0f"], [0.5, "#3a2a7a"], [1, "#7c6aff"]],
+        text=cm, texttemplate="%{text}",
         showscale=False,
         hovertemplate="Реальный: %{y}<br>Предсказанный: %{x}<br>Кол-во: %{z}<extra></extra>",
     ))
@@ -476,30 +476,31 @@ def plot_confusion_matrix(cm, title, classes):
 
 
 def plot_pr_curve(pr_data_dict):
+    """Строит PR-кривые для нескольких наборов (до/после) по всем моделям."""
     fig = go.Figure()
-    dash_map  = {"original": "dot", "balanced": "solid"}
+    dash_map = {"original": "dot", "balanced": "solid"}
     label_map = {"original": "Исходные", "balanced": "Сбалансированные"}
     for tag, model_results in pr_data_dict.items():
         for model_name, res in model_results.items():
             if res["pr_data"] is None:
                 continue
             p = res["pr_data"]
-            color = MODEL_COLORS.get(model_name, "#6366f1")
+            color = MODEL_COLORS.get(model_name, "#ffffff")
             fig.add_trace(go.Scatter(
                 x=p["recall"], y=p["precision"],
                 mode="lines",
                 name=f"{model_name} [{label_map.get(tag, tag)}] AP={p['ap']:.3f}",
                 line=dict(color=color, dash=dash_map.get(tag, "solid"), width=2),
             ))
-    fig.add_hline(y=0.5, line_dash="dash", line_color="#9ca3af", annotation_text="Baseline")
+    fig.add_hline(y=0.5, line_dash="dash", line_color="#6b6b80", annotation_text="Baseline")
     fig.update_layout(
         title=dict(text="Precision-Recall Curve", font=dict(family="Syne, sans-serif", size=14)),
         xaxis_title="Recall", yaxis_title="Precision",
         legend=dict(orientation="v", x=1.01, y=1),
         height=420, **PLOTLY_THEME
     )
-    fig.update_xaxes(gridcolor="#e5e7eb", zeroline=False, range=[0, 1])
-    fig.update_yaxes(gridcolor="#e5e7eb", zeroline=False, range=[0, 1])
+    fig.update_xaxes(gridcolor="#2a2a35", zeroline=False, range=[0, 1])
+    fig.update_yaxes(gridcolor="#2a2a35", zeroline=False, range=[0, 1])
     return fig
 
 
@@ -509,13 +510,13 @@ def build_metrics_table(orig_res, bal_res):
         o = orig_res[name]
         b = bal_res[name]
         rows.append({
-            "Модель":             name,
-            "Accuracy (до)":      round(o["acc"], 4),
-            "Accuracy (после)":   round(b["acc"], 4),
-            "F1-weighted (до)":   round(o["f1"], 4),
+            "Модель": name,
+            "Accuracy (до)":  round(o["acc"], 4),
+            "Accuracy (после)": round(b["acc"], 4),
+            "F1-weighted (до)":  round(o["f1"], 4),
             "F1-weighted (после)": round(b["f1"], 4),
-            "ROC-AUC (до)":       round(o["auc"], 4) if o["auc"] is not None else "—",
-            "ROC-AUC (после)":    round(b["auc"], 4) if b["auc"] is not None else "—",
+            "ROC-AUC (до)":   round(o["auc"], 4) if o["auc"] is not None else "—",
+            "ROC-AUC (после)": round(b["auc"], 4) if b["auc"] is not None else "—",
         })
     return pd.DataFrame(rows)
 
@@ -523,14 +524,14 @@ def build_metrics_table(orig_res, bal_res):
 def plot_dim_reduction(X, y, method="PCA", title=""):
     if method == "PCA":
         reducer = PCA(n_components=2, random_state=42)
-        coords  = reducer.fit_transform(X)
-        var     = reducer.explained_variance_ratio_
+        coords = reducer.fit_transform(X)
+        var = reducer.explained_variance_ratio_
         ax_labels = (f"PC1 ({var[0]*100:.1f}%)", f"PC2 ({var[1]*100:.1f}%)")
-    else:
+    else:  # t-SNE
         n_samples = X.shape[0]
-        perp      = min(30, n_samples - 1)
-        reducer   = TSNE(n_components=2, random_state=42, perplexity=perp, max_iter=300)
-        coords    = reducer.fit_transform(X)
+        perp = min(30, n_samples - 1)
+        reducer = TSNE(n_components=2, random_state=42, perplexity=perp, max_iter=300)
+        coords = reducer.fit_transform(X)
         ax_labels = ("t-SNE 1", "t-SNE 2")
 
     classes = np.unique(y)
@@ -549,8 +550,8 @@ def plot_dim_reduction(X, y, method="PCA", title=""):
         xaxis_title=ax_labels[0], yaxis_title=ax_labels[1],
         height=420, **PLOTLY_THEME
     )
-    fig.update_xaxes(gridcolor="#e5e7eb", zeroline=False)
-    fig.update_yaxes(gridcolor="#e5e7eb", zeroline=False)
+    fig.update_xaxes(gridcolor="#2a2a35", zeroline=False)
+    fig.update_yaxes(gridcolor="#2a2a35", zeroline=False)
     return fig
 
 
@@ -571,10 +572,10 @@ def init_state():
         "dist_after":       None,
         "recommendations":  None,
         "applied_method":   None,
-        "ml_results":       None,
-        "dim_results":      None,
-        "multi_compare":    None,
-        "history":          [],
+        "ml_results":       None,   # {"original": {...}, "balanced": {...}}
+        "dim_results":      None,   # данные для визуализации
+        "multi_compare":    None,   # результаты сравнения методов
+        "history":          [],     # история операций
         "step":             0,
     }
     for k, v in defaults.items():
@@ -633,7 +634,7 @@ with st.sidebar:
     for i, s in enumerate(steps):
         is_done = st.session_state.step > i
         is_cur  = st.session_state.step == i
-        color   = "#10b981" if is_done else ("#6366f1" if is_cur else "#9ca3af")
+        color   = "#4ade80" if is_done else ("#7c6aff" if is_cur else "#6b6b80")
         st.markdown(
             f'<div style="padding:0.3rem 0.5rem;color:{color};'
             f'font-size:0.78rem;font-weight:{"700" if is_cur else "400"}">{s}</div>',
@@ -642,7 +643,7 @@ with st.sidebar:
 
     st.markdown("---")
     if st.session_state.df_raw is not None:
-        df_cur = st.session_state.df_clean if st.session_state.df_clean is not None else st.session_state.df_raw
+        df_cur = st.session_state.df_clean or st.session_state.df_raw
         st.markdown(f"**Датасет:** `{df_cur.shape[0]} × {df_cur.shape[1]}`")
         if st.session_state.target_col:
             dist_sb = class_distribution(df_cur[st.session_state.target_col])
@@ -654,12 +655,13 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("---")
+    # Мини-история в боковой панели
     if st.session_state.history:
         st.markdown("**📋 Последние действия:**")
         for h in reversed(st.session_state.history[-5:]):
             st.markdown(
-                f'<div style="font-size:0.7rem;color:#6b7280;padding:0.2rem 0">'
-                f'<span style="color:#6366f1">{h["ts"]}</span> {h["type"]}</div>',
+                f'<div style="font-size:0.7rem;color:#6b6b80;padding:0.2rem 0">'
+                f'<span style="color:#7c6aff">{h["ts"]}</span> {h["type"]}</div>',
                 unsafe_allow_html=True
             )
 
@@ -736,7 +738,7 @@ st.markdown(f"""
   <div class="metric-box"><div class="metric-label">Imbalance Ratio</div>
     <div class="metric-value {'accent2' if ir > 5 else 'success'}">{ir}</div></div>
   <div class="metric-box"><div class="metric-label">Пропущенных</div>
-    <div class="metric-value" style="color:{'#f59e0b' if n_missing > 0 else '#10b981'}">{n_missing}</div></div>
+    <div class="metric-value" style="color:{'#fbbf24' if n_missing > 0 else '#4ade80'}">{n_missing}</div></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -837,8 +839,8 @@ if recs:
     st.markdown(f"""
     <div style="margin:1rem 0 0.5rem">
       <span class="metric-label">Характеристики датасета</span><br>
-      <span>IR = <b style="color:#ec489a">{ir_cur}</b>
-      · Классов: <b style="color:#6366f1">{len(dist_cur)}</b>
+      <span>IR = <b style="color:#ff6a9b">{ir_cur}</b>
+      · Классов: <b style="color:#7c6aff">{len(dist_cur)}</b>
       · Объектов: <b>{len(df_clean):,}</b></span>
     </div>
     """, unsafe_allow_html=True)
@@ -889,7 +891,7 @@ else:
             method_options = list(COMBINE_METHODS.keys())
         chosen_method = st.selectbox("Метод:", options=method_options, key="chosen_method")
         if recs and chosen_method == recs.get("top"):
-            st.markdown('<span style="color:#6366f1;font-size:0.75rem">⭐ Этот метод рекомендован</span>',
+            st.markdown('<span style="color:#7c6aff;font-size:0.75rem">⭐ Этот метод рекомендован</span>',
                         unsafe_allow_html=True)
 
     rs = st.slider("Random state:", 0, 100, 42, key="bal_rs")
@@ -903,11 +905,11 @@ else:
                     y_res = le.inverse_transform(y_res)
                 df_bal = pd.DataFrame(X_res, columns=num_cols)
                 df_bal[target] = y_res
-                st.session_state.df_balanced    = df_bal
-                st.session_state.dist_after     = class_distribution(df_bal[target])
+                st.session_state.df_balanced  = df_bal
+                st.session_state.dist_after   = class_distribution(df_bal[target])
                 st.session_state.applied_method = chosen_method
-                st.session_state.step           = max(st.session_state.step, 5)
-                st.session_state.ml_results     = None
+                st.session_state.step = max(st.session_state.step, 5)
+                st.session_state.ml_results = None  # сбрасываем старые ML-результаты
 
                 ir_new = compute_ir(st.session_state.dist_after)
                 delta  = len(df_bal) - len(df_clean)
@@ -943,7 +945,7 @@ else:
     st.markdown(f"""
     <div class="metric-row">
       <div class="metric-box"><div class="metric-label">Метод</div>
-        <div class="metric-value" style="font-size:1rem;color:#6366f1">{method_used}</div></div>
+        <div class="metric-value" style="font-size:1rem;color:#7c6aff">{method_used}</div></div>
       <div class="metric-box"><div class="metric-label">IR до</div>
         <div class="metric-value accent2">{ir_before}</div></div>
       <div class="metric-box"><div class="metric-label">IR после</div>
@@ -961,7 +963,7 @@ else:
                         use_container_width=True, key="pie_before")
     with col_pie2:
         st.plotly_chart(make_pie(dist_after, "После балансировки",
-                                 ["#14b8a6", "#6366f1", "#ec489a", "#f59e0b", "#3b82f6"]),
+                                 ["#6affd4", "#7c6aff", "#ff6a9b", "#fbbf24", "#60a5fa"]),
                         use_container_width=True, key="pie_after")
 
     st.plotly_chart(make_bar(dist_before, dist_after), use_container_width=True, key="bar_compare")
@@ -983,6 +985,7 @@ if st.session_state.df_balanced is None:
 else:
     df_balanced = st.session_state.df_balanced
 
+    # Настройка параметров моделей
     with st.expander("⚙️ Настройка параметров моделей", expanded=False):
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
@@ -1016,9 +1019,11 @@ else:
                 X_orig, y_orig, le_orig = prepare_X_y(df_clean, target, num_cols)
                 X_bal,  y_bal,  le_bal  = prepare_X_y(df_balanced, target, num_cols)
 
+                # Единое тестовое множество — из исходных данных
                 X_tr_o, X_te, y_tr_o, y_te = train_test_split(
                     X_orig, y_orig, test_size=test_size, random_state=42, stratify=y_orig)
 
+                # На сбалансированных обучаем на всём, тест — тот же
                 X_tr_b = X_bal
                 y_tr_b = y_bal
 
@@ -1045,22 +1050,22 @@ else:
         y_te     = ml["y_test"]
         classes  = ml["classes"]
 
+        # ── Таблица сравнения метрик ──
         st.markdown("#### 📊 Таблица сравнения метрик")
         metrics_df = build_metrics_table(orig_res, bal_res)
+        st.dataframe(
+            metrics_df.style.highlight_max(
+                subset=[c for c in metrics_df.columns if "после" in c.lower()],
+                color="#1a2a1a"
+            ),
+            use_container_width=True, hide_index=True
+        )
 
-        # ── ИСПРАВЛЕНИЕ 3: highlight_max только по числовым колонкам ──
-        numeric_after_cols = [
-            c for c in metrics_df.columns
-            if "после" in c.lower() and pd.api.types.is_numeric_dtype(metrics_df[c])
-        ]
-        styled = metrics_df.style
-        if numeric_after_cols:
-            styled = styled.highlight_max(subset=numeric_after_cols, color="lightgreen")
-        st.dataframe(styled, use_container_width=True, hide_index=True)
-
+        # Скачать таблицу
         csv_m = metrics_df.to_csv(index=False).encode("utf-8-sig")
         st.download_button("⬇ Скачать таблицу метрик", csv_m, "ml_metrics.csv", "text/csv")
 
+        # ── Confusion Matrices ──
         st.markdown("#### 🗂 Confusion Matrix")
         cm_tab_orig, cm_tab_bal = st.tabs(["Исходные данные", "Сбалансированные данные"])
         with cm_tab_orig:
@@ -1076,6 +1081,7 @@ else:
                     fig_cm = plot_confusion_matrix(res["cm"], name, classes)
                     st.plotly_chart(fig_cm, use_container_width=True, key=f"cm_bal_{i}")
 
+        # ── Precision-Recall Curve ──
         binary = len(classes) == 2
         if binary:
             st.markdown("#### 📈 Precision-Recall Curve")
@@ -1085,6 +1091,7 @@ else:
         else:
             st.info("PR-кривая доступна только для бинарной классификации.")
 
+        # ── Гистограмма F1 ──
         st.markdown("#### 📊 Сравнение F1-weighted по моделям")
         fig_f1 = go.Figure()
         model_names = list(orig_res.keys())
@@ -1092,12 +1099,12 @@ else:
         f1_bal  = [bal_res[n]["f1"]  for n in model_names]
 
         fig_f1.add_trace(go.Bar(name="Исходные данные", x=model_names, y=f1_orig,
-                                marker_color="#ec489a", marker_line=dict(color="white", width=1)))
+                                marker_color="#ff6a9b", marker_line=dict(color="#0d0d0f", width=1)))
         fig_f1.add_trace(go.Bar(name="Сбалансированные", x=model_names, y=f1_bal,
-                                marker_color="#14b8a6", marker_line=dict(color="white", width=1)))
+                                marker_color="#6affd4", marker_line=dict(color="#0d0d0f", width=1)))
         fig_f1.update_layout(barmode="group", yaxis_title="F1-weighted", height=340,
                              legend=dict(orientation="h", y=1.1), **PLOTLY_THEME)
-        fig_f1.update_yaxes(gridcolor="#e5e7eb", range=[0, 1])
+        fig_f1.update_yaxes(gridcolor="#2a2a35", range=[0, 1])
         st.plotly_chart(fig_f1, use_container_width=True, key="f1_bar")
 
 st.markdown("</div>", unsafe_allow_html=True)
@@ -1129,6 +1136,7 @@ else:
                 X_o, y_o, _ = prepare_X_y(df_clean, target, num_cols)
                 X_b, y_b, _ = prepare_X_y(st.session_state.df_balanced, target, num_cols)
 
+                # subsample
                 def subsample(X, y, n):
                     if len(X) <= n:
                         return X, y
@@ -1207,21 +1215,20 @@ else:
                     X_orig, y_orig, test_size=cmp_test, random_state=42, stratify=y_orig)
 
                 scaler_cmp = StandardScaler()
-                X_tr_sc_base = scaler_cmp.fit_transform(X_tr)
-                X_te_sc_base = scaler_cmp.transform(X_te)
+                X_te_sc = scaler_cmp.fit_transform(X_te)
 
                 compare_rows = []
+                # Добавляем исходные данные как baseline
                 rf_base = RandomForestClassifier(n_estimators=100, random_state=42)
+                X_tr_sc_base = scaler_cmp.fit_transform(X_tr)
+                X_te_sc_base = scaler_cmp.transform(X_te)
                 rf_base.fit(X_tr_sc_base, y_tr)
-                y_pred_base  = rf_base.predict(X_te_sc_base)
-                binary_cmp   = len(np.unique(y_orig)) == 2
-                auc_base     = None
+                y_pred_base = rf_base.predict(X_te_sc_base)
+                binary_cmp = len(np.unique(y_orig)) == 2
+                auc_base = None
                 if binary_cmp and hasattr(rf_base, "predict_proba"):
-                    try:
-                        yp = rf_base.predict_proba(X_te_sc_base)[:, 1]
-                        auc_base = round(roc_auc_score(y_te, yp), 4)
-                    except ValueError:
-                        auc_base = None
+                    yp = rf_base.predict_proba(X_te_sc_base)[:, 1]
+                    auc_base = round(roc_auc_score(y_te, yp), 4)
 
                 compare_rows.append({
                     "Метод":            "— Исходные данные —",
@@ -1240,14 +1247,11 @@ else:
                         X_t_sc = sc.transform(X_te)
                         rf = RandomForestClassifier(n_estimators=100, random_state=42)
                         rf.fit(X_r_sc, y_res)
-                        y_pred   = rf.predict(X_t_sc)
-                        auc_val  = None
+                        y_pred = rf.predict(X_t_sc)
+                        auc_val = None
                         if binary_cmp and hasattr(rf, "predict_proba"):
-                            try:
-                                yp2 = rf.predict_proba(X_t_sc)[:, 1]
-                                auc_val = round(roc_auc_score(y_te, yp2), 4)
-                            except ValueError:
-                                auc_val = None
+                            yp2 = rf.predict_proba(X_t_sc)[:, 1]
+                            auc_val = round(roc_auc_score(y_te, yp2), 4)
                         ir_res = compute_ir(class_distribution(pd.Series(y_res)))
                         compare_rows.append({
                             "Метод":            mname,
@@ -1264,9 +1268,9 @@ else:
                         })
 
                 st.session_state.multi_compare = {
-                    "rows":    compare_rows,
+                    "rows": compare_rows,
                     "methods": selected_methods,
-                    "binary":  binary_cmp,
+                    "binary": binary_cmp,
                 }
                 st.session_state.step = max(st.session_state.step, 9)
                 add_history("🔬 Сравнение", f"{', '.join(selected_methods)}")
@@ -1278,30 +1282,33 @@ else:
 
     mc = st.session_state.multi_compare
     if mc:
-        rows   = mc["rows"]
+        rows = mc["rows"]
         df_cmp = pd.DataFrame(rows)
         st.markdown("#### 📋 Таблица сравнения методов")
         st.dataframe(df_cmp, use_container_width=True, hide_index=True)
 
+        # Скачать
         csv_cmp = df_cmp.to_csv(index=False).encode("utf-8-sig")
         st.download_button("⬇ Скачать таблицу", csv_cmp, "methods_comparison.csv", "text/csv")
 
+        # Гистограмма F1
         numeric_rows = [r for r in rows if isinstance(r["F1-weighted"], float)]
         if numeric_rows:
             st.markdown("#### 📊 F1-weighted по методам")
-            fig_cmp    = go.Figure()
-            methods_x  = [r["Метод"] for r in numeric_rows]
-            f1_y       = [r["F1-weighted"] for r in numeric_rows]
-            colors_cmp = ["#9ca3af" if "Исходные" in m else "#6366f1" for m in methods_x]
+            fig_cmp = go.Figure()
+            methods_x = [r["Метод"] for r in numeric_rows]
+            f1_y      = [r["F1-weighted"] for r in numeric_rows]
+            colors_cmp = ["#6b6b80" if "Исходные" in m else "#7c6aff" for m in methods_x]
             fig_cmp.add_trace(go.Bar(x=methods_x, y=f1_y,
                                      marker_color=colors_cmp,
-                                     marker_line=dict(color="white", width=1),
+                                     marker_line=dict(color="#0d0d0f", width=1),
                                      text=[f"{v:.4f}" for v in f1_y], textposition="outside"))
             fig_cmp.update_layout(yaxis_title="F1-weighted", yaxis_range=[0, 1.1],
                                   height=360, **PLOTLY_THEME)
-            fig_cmp.update_yaxes(gridcolor="#e5e7eb")
+            fig_cmp.update_yaxes(gridcolor="#2a2a35")
             st.plotly_chart(fig_cmp, use_container_width=True, key="cmp_f1_bar")
 
+        # IR до/после
         numeric_ir = [r for r in rows if isinstance(r.get("IR после"), (int, float))]
         if len(numeric_ir) > 1:
             st.markdown("#### ⚖️ Imbalance Ratio после балансировки")
@@ -1309,12 +1316,12 @@ else:
             fig_ir.add_trace(go.Bar(
                 x=[r["Метод"] for r in numeric_ir],
                 y=[r["IR после"] for r in numeric_ir],
-                marker_color="#ec489a",
-                marker_line=dict(color="white", width=1),
+                marker_color="#ff6a9b",
+                marker_line=dict(color="#0d0d0f", width=1),
                 text=[str(r["IR после"]) for r in numeric_ir], textposition="outside"
             ))
             fig_ir.update_layout(yaxis_title="Imbalance Ratio", height=320, **PLOTLY_THEME)
-            fig_ir.update_yaxes(gridcolor="#e5e7eb")
+            fig_ir.update_yaxes(gridcolor="#2a2a35")
             st.plotly_chart(fig_ir, use_container_width=True, key="cmp_ir_bar")
 
 st.markdown("</div>", unsafe_allow_html=True)
@@ -1332,15 +1339,15 @@ st.markdown('<div class="step-card">'
 if st.session_state.df_balanced is None:
     st.info("Сначала примените балансировку на шаге 05.")
 else:
-    df_final    = st.session_state.df_balanced
+    df_final = st.session_state.df_balanced
     method_used = st.session_state.applied_method or "balanced"
 
     col_save1, col_save2 = st.columns(2)
     with col_save1:
         st.markdown("**Параметры сохранения:**")
-        sep           = st.radio("Разделитель:", [",", ";", "\\t"], horizontal=True, key="csv_sep")
+        sep = st.radio("Разделитель:", [",", ";", "\\t"], horizontal=True, key="csv_sep")
         include_index = st.checkbox("Включить индекс", value=False, key="csv_index")
-        filename      = st.text_input("Имя файла:", value=f"balanced_{method_used}.csv", key="csv_filename")
+        filename = st.text_input("Имя файла:", value=f"balanced_{method_used}.csv", key="csv_filename")
     with col_save2:
         st.markdown("**Предпросмотр (5 строк):**")
         st.dataframe(df_final.head(5), use_container_width=True)
@@ -1385,12 +1392,13 @@ if st.session_state.history:
         st.markdown(f"""
         <div class="history-item">
           <div class="history-ts">#{len(st.session_state.history) - i} · {h["ts"]}</div>
-          <div style="color:#111827;margin-top:0.2rem">
-            <b style="color:#6366f1">{h["type"]}</b> — {h["details"]}
+          <div style="color:#e8e8f0;margin-top:0.2rem">
+            <b style="color:#7c6aff">{h["type"]}</b> — {h["details"]}
           </div>
         </div>
         """, unsafe_allow_html=True)
 
+    # Скачать историю как JSON
     history_json = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
     st.download_button("⬇ Скачать историю (JSON)", history_json.encode("utf-8"),
                        "session_history.json", "application/json")
@@ -1400,8 +1408,8 @@ if st.session_state.history:
 
 # ── Footer ─────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align:center;padding:2rem 0 1rem;color:#6b7280;font-size:0.72rem;
-letter-spacing:0.08em;border-top:1px solid #e5e7eb;margin-top:2rem">
+<div style="text-align:center;padding:2rem 0 1rem;color:#6b6b80;font-size:0.72rem;
+letter-spacing:0.08em;border-top:1px solid #2a2a35;margin-top:2rem">
   DATABALANCE PRO · SMOTE · ADASYN · BorderlineSMOTE · RandomForest · XGBoost · PCA · t-SNE
 </div>
 """, unsafe_allow_html=True)

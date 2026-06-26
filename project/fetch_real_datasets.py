@@ -22,7 +22,6 @@
 
     # Другая папка / число датасетов
     python fetch_real_datasets.py --output real_datasets/ --target 200
-
     # Пропустить уже скачанные
     python fetch_real_datasets.py --resume
 

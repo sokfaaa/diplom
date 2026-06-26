@@ -1,0 +1,28 @@
+|--- ssi_cor.median <= 5.62
+|   |--- minority_size <= -0.39
+|   |   |--- CV <= 1.36
+|   |   |   |--- ssi_f1.q1 <= -0.09
+|   |   |   |   |--- → BorderlineSMOTE1
+|   |   |   |--- ssi_f1.q1 >  -0.09
+|   |   |   |   |--- → BorderlineSMOTE
+|   |   |--- CV >  1.36
+|   |   |   |--- → ENN
+|   |--- minority_size >  -0.39
+|   |   |--- n_minority_classes <= -0.75
+|   |   |   |--- ssi_cov.min <= 3.20
+|   |   |   |   |--- → NCR
+|   |   |   |--- ssi_cov.min >  3.20
+|   |   |   |   |--- → SMOTEENN
+|   |   |--- n_minority_classes >  -0.75
+|   |   |   |--- ssi_cov.max <= 0.45
+|   |   |   |   |--- → KMeansSMOTE
+|   |   |   |--- ssi_cov.max >  0.45
+|   |   |   |   |--- → ADASYN
+|--- ssi_cor.median >  5.62
+|   |--- pIR_cv <= -0.55
+|   |   |--- → ENN
+|   |--- pIR_cv >  -0.55
+|   |   |--- f1.mean <= -3.20
+|   |   |   |--- → BorderlineSMOTE
+|   |   |--- f1.mean >  -3.20
+|   |   |   |--- → SMOTE

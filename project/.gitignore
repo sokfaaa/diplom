@@ -6,3 +6,7 @@ datasets2/
 keel_files/
 real_datasets2/
 real_datasets2_2/
+datasets1/
+figures/
+fetch_real_datasets.py
+datasets/

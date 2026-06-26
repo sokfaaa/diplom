@@ -30,6 +30,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import optuna
 from imblearn.combine import SMOTEENN, SMOTETomek
 from imblearn.metrics import geometric_mean_score
 from imblearn.over_sampling import (
@@ -40,12 +41,22 @@ from imblearn.over_sampling import (
     RandomOverSampler,
     SVMSMOTE,
 )
+from imblearn.under_sampling import (
+    RandomUnderSampler,
+    CondensedNearestNeighbour,
+    NearMiss,
+    TomekLinks,
+    EditedNearestNeighbours,
+    OneSidedSelection,
+    NeighbourhoodCleaningRule,
+)
 from joblib import Parallel, delayed
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score, f1_score
 
 warnings.filterwarnings("ignore")
-logging.disable(logging.CRITICAL)  # глушим логи smote_variants
+logging.disable(logging.CRITICAL)
+optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 # ---------------------------------------------------------------------------
 # Патч для multi-imbalance (несовместимость с imblearn >= 0.11)
@@ -124,8 +135,122 @@ class SVMulticlassWrapper:
 
 
 # ---------------------------------------------------------------------------
-# Реестр сэмплеров
+# Пакеты сэмплеров — запускай отдельно для контроля
 # ---------------------------------------------------------------------------
+
+SAMPLER_PACKS = {
+    # Базовый — всегда запускать первым
+    "baseline": [
+        "Baseline",
+    ],
+
+    # Стандартные imblearn oversampling — быстрые, нативный multiclass
+    "imblearn": [
+        "RandomOverSampler",
+        "SMOTE", "BorderlineSMOTE", "SVMSMOTE", "ADASYN", "KMeansSMOTE",
+        "SMOTEENN", "SMOTETomek",
+    ],
+
+    # Undersampling — отдельный пак (некоторые медленные: CNN, OSS)
+    "undersampling": [
+        "RandomUnderSampler",
+        "TomekLinks",        # быстрый — просто удаляет граничные пары
+        "ENN",               # средний — kNN для каждой точки
+        "NCR",               # средний — расширенный ENN
+        "NearMiss_v1",       # медленный — попарные расстояния
+        "NearMiss_v2",       # медленный
+        "NearMiss_v3",       # медленный
+        "CNN",               # медленный — итеративный алгоритм
+        "OSS",               # медленный — TomekLinks + CNN
+    ],
+
+    # Быстрый undersampling — без медленных методов
+    "undersampling_fast": [
+        "RandomUnderSampler",
+        "TomekLinks",
+        "ENN",
+        "NCR",
+    ],
+
+    # smote_variants — OvA обёртка, медленные
+    "sv": [
+        "distance_SMOTE", "cluster_SMOTE",
+        "CBSO", "DBSMOTE", "MWMOTE", "AHC",
+    ],
+
+    # multi-imbalance — нативно многоклассовые
+    "multi": [
+        "SOUP", "GlobalCS", "SPIDER3",
+    ],
+
+    # Всё кроме smote_variants и медленного undersampling
+    "fast": [
+        "Baseline",
+        "RandomOverSampler", "SMOTE", "BorderlineSMOTE",
+        "SVMSMOTE", "ADASYN", "KMeansSMOTE",
+        "SMOTEENN", "SMOTETomek",
+        "RandomUnderSampler", "TomekLinks", "ENN", "NCR",
+        "SOUP", "GlobalCS", "SPIDER3",
+    ],
+
+    # Полный набор
+    "all": [],  # [] = все доступные из реестра
+}
+
+
+def resolve_samplers(pack: str | None, samplers_arg: str | None) -> list[str] | None:
+    """
+    Возвращает список сэмплеров для запуска.
+    Приоритет: --samplers > --pack > None (все)
+    """
+    if samplers_arg:
+        return [s.strip() for s in samplers_arg.split(",")]
+    if pack:
+        pack = pack.lower()
+        if pack not in SAMPLER_PACKS:
+            print(f"Неизвестный пакет '{pack}'. Доступные: {list(SAMPLER_PACKS.keys())}")
+            return None
+        result = SAMPLER_PACKS[pack]
+        return result if result else None  # [] → None → все сэмплеры
+    return None  # None → все
+
+
+def print_packs():
+    """Выводит список доступных пакетов."""
+    print("\nДоступные пакеты сэмплеров (--pack):")
+    print("=" * 55)
+    for pack_name, samplers in SAMPLER_PACKS.items():
+        if samplers:
+            print(f"\n  --pack {pack_name}")
+            for s in samplers:
+                print(f"    • {s}")
+        else:
+            print(f"\n  --pack {pack_name}  (все доступные сэмплеры)")
+    print()
+    print("Примеры запуска:")
+    print("  # Шаг 1: Baseline")
+    print("  python benchmark_samplers.py --pack baseline --resume")
+    print()
+    print("  # Шаг 2: Oversampling (imblearn, быстро)")
+    print("  python benchmark_samplers.py --pack imblearn --resume --jobs 4")
+    print()
+    print("  # Шаг 3: Undersampling быстрые (RUS, TomekLinks, ENN, NCR)")
+    print("  python benchmark_samplers.py --pack undersampling_fast --resume --jobs 4")
+    print()
+    print("  # Шаг 4: Undersampling медленные (CNN, NearMiss, OSS)")
+    print("  python benchmark_samplers.py --pack undersampling --resume --jobs 2")
+    print()
+    print("  # Шаг 5: smote_variants (OvA, медленно)")
+    print("  python benchmark_samplers.py --pack sv --resume --jobs 2")
+    print()
+    print("  # Шаг 6: multi-imbalance")
+    print("  python benchmark_samplers.py --pack multi --resume")
+    print()
+    print("  # Или конкретные методы:")
+    print("  python benchmark_samplers.py --samplers RandomUnderSampler,ENN,NCR")
+    print("=" * 55)
+
+
 
 def build_sampler_registry(random_state: int = 42) -> dict:
     """
@@ -136,18 +261,30 @@ def build_sampler_registry(random_state: int = 42) -> dict:
 
     # ── imblearn ──────────────────────────────────────────────────────
     registry = {
-        "Baseline": lambda: None,  # специальный случай — без сэмплинга
+        "Baseline":          lambda: None,
+        # Oversampling
         "RandomOverSampler": lambda: RandomOverSampler(random_state=rs),
-        "SMOTE":              lambda: SMOTE(random_state=rs),
-        "BorderlineSMOTE":    lambda: BorderlineSMOTE(random_state=rs),
-        "SVMSMOTE":           lambda: SVMSMOTE(random_state=rs),
-        "ADASYN":             lambda: ADASYN(random_state=rs),
-        "KMeansSMOTE":        lambda: KMeansSMOTE(
-                                  random_state=rs,
-                                  cluster_balance_threshold=0.0,
-                              ),
-        "SMOTEENN":           lambda: SMOTEENN(random_state=rs),
-        "SMOTETomek":         lambda: SMOTETomek(random_state=rs),
+        "SMOTE":             lambda: SMOTE(random_state=rs),
+        "BorderlineSMOTE":   lambda: BorderlineSMOTE(random_state=rs),
+        "SVMSMOTE":          lambda: SVMSMOTE(random_state=rs),
+        "ADASYN":            lambda: ADASYN(random_state=rs),
+        "KMeansSMOTE":       lambda: KMeansSMOTE(
+                                 random_state=rs,
+                                 cluster_balance_threshold=0.0,
+                             ),
+        # Combine
+        "SMOTEENN":          lambda: SMOTEENN(random_state=rs),
+        "SMOTETomek":        lambda: SMOTETomek(random_state=rs),
+        # Undersampling
+        "RandomUnderSampler":        lambda: RandomUnderSampler(random_state=rs),
+        "CNN":                       lambda: CondensedNearestNeighbour(random_state=rs, n_jobs=1),
+        "NearMiss_v1":               lambda: NearMiss(version=1, n_jobs=1),
+        "NearMiss_v2":               lambda: NearMiss(version=2, n_jobs=1),
+        "NearMiss_v3":               lambda: NearMiss(version=3, n_jobs=1),
+        "TomekLinks":                lambda: TomekLinks(n_jobs=1),
+        "ENN":                       lambda: EditedNearestNeighbours(n_jobs=1),
+        "OSS":                       lambda: OneSidedSelection(random_state=rs, n_jobs=1),
+        "NCR":                       lambda: NeighbourhoodCleaningRule(n_jobs=1),
     }
 
     # ── smote_variants (OvR-обёртка) ─────────────────────────────────
@@ -180,6 +317,107 @@ def build_sampler_registry(random_state: int = 42) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Optuna: подбор гиперпараметров RF (один раз на датасет, без сэмплера)
+# ---------------------------------------------------------------------------
+
+# Константы по заданию
+OPTUNA_TRIALS   = 20
+INNER_CV_FOLDS  = 3   # внутренняя CV для оценки параметров RF
+OUTER_CV_FOLDS  = 3   # внешняя CV для оценки сэмплера
+
+RF_PARAM_SPACE = {
+    "n_estimators":     (100, 400),
+    "max_depth":        (5,   20),
+    "min_samples_split":(5,   50),
+    "min_samples_leaf": (2,   20),
+    "max_features":     ["sqrt", "log2", 0.3, 0.5],
+}
+
+
+def tune_rf_optuna(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    random_state: int,
+) -> dict:
+    """
+    Подбирает гиперпараметры RF через Optuna на исходных данных (без сэмплера).
+    Использует внутреннюю {INNER_CV_FOLDS}-fold CV и Pruning для ранней остановки.
+
+    Возвращает словарь лучших гиперпараметров.
+    """
+    from sklearn.model_selection import StratifiedKFold, cross_val_score
+    from optuna.pruners import MedianPruner
+
+    # Минимальный класс — ограничивает число фолдов
+    min_cls = pd.Series(y_train).value_counts().min()
+    n_splits = min(INNER_CV_FOLDS, min_cls)
+    if n_splits < 2:
+        # Слишком мало данных — возвращаем дефолтные параметры
+        return {
+            "n_estimators":      200,
+            "max_depth":         10,
+            "min_samples_split": 10,
+            "min_samples_leaf":  4,
+            "max_features":      "sqrt",
+            "class_weight":      "balanced",
+        }
+
+    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+
+    def objective(trial: optuna.Trial) -> float:
+        params = {
+            "n_estimators":      trial.suggest_int("n_estimators",
+                                     RF_PARAM_SPACE["n_estimators"][0],
+                                     RF_PARAM_SPACE["n_estimators"][1]),
+            "max_depth":         trial.suggest_int("max_depth",
+                                     RF_PARAM_SPACE["max_depth"][0],
+                                     RF_PARAM_SPACE["max_depth"][1]),
+            "min_samples_split": trial.suggest_int("min_samples_split",
+                                     RF_PARAM_SPACE["min_samples_split"][0],
+                                     RF_PARAM_SPACE["min_samples_split"][1]),
+            "min_samples_leaf":  trial.suggest_int("min_samples_leaf",
+                                     RF_PARAM_SPACE["min_samples_leaf"][0],
+                                     RF_PARAM_SPACE["min_samples_leaf"][1]),
+            "max_features":      trial.suggest_categorical(
+                                     "max_features", RF_PARAM_SPACE["max_features"]),
+            "class_weight":      "balanced",
+            "random_state":      random_state,
+            "n_jobs":            1,
+        }
+        rf = RandomForestClassifier(**params)
+
+        # Оцениваем с Pruning — после каждого фолда проверяем перспективность
+        fold_scores = []
+        for step, (tr_idx, val_idx) in enumerate(cv.split(X_train, y_train)):
+            rf_fold = RandomForestClassifier(**params)
+            rf_fold.fit(X_train[tr_idx], y_train[tr_idx])
+            score = balanced_accuracy_score(
+                y_train[val_idx], rf_fold.predict(X_train[val_idx])
+            )
+            fold_scores.append(score)
+
+            # Сообщаем Optuna промежуточный результат для Pruning
+            trial.report(float(np.mean(fold_scores)), step)
+            if trial.should_prune():
+                raise optuna.exceptions.TrialPruned()
+
+        return float(np.mean(fold_scores))
+
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=random_state),
+        pruner=MedianPruner(n_startup_trials=5, n_warmup_steps=1),
+    )
+    study.optimize(objective, n_trials=OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False)
+
+    best = study.best_params.copy()
+    best["class_weight"]  = "balanced"
+    best["random_state"]  = random_state
+    best["n_jobs"]        = 1
+    return best
+
+
+# ---------------------------------------------------------------------------
 # Метрики
 # ---------------------------------------------------------------------------
 
@@ -190,6 +428,89 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
         "g_mean":            float(geometric_mean_score(y_true, y_pred,
                                                          average="multiclass")),
     }
+
+
+# ---------------------------------------------------------------------------
+# CV-оценка одного сэмплера (внешняя CV по заданию)
+# ---------------------------------------------------------------------------
+
+def evaluate_sampler_cv(
+    X: np.ndarray,
+    y: np.ndarray,
+    sampler_name: str,
+    sampler_factory,
+    rf_params: dict,
+    random_state: int,
+) -> dict[str, float]:
+    """
+    Оценивает сэмплер через {OUTER_CV_FOLDS}-fold стратифицированную CV.
+    На каждом фолде:
+      1. Применяем сэмплер к train-фолду
+      2. Обучаем RF с заранее подобранными гиперпараметрами
+      3. Считаем метрики на val-фолде
+    Возвращает средние метрики по фолдам.
+    """
+    from sklearn.model_selection import StratifiedKFold
+
+    min_cls  = pd.Series(y).value_counts().min()
+    n_splits = min(OUTER_CV_FOLDS, min_cls)
+    if n_splits < 2:
+        # Fallback: обучаем на всём без CV
+        return _evaluate_sampler_simple(
+            X, X, y, y, sampler_name, sampler_factory, rf_params, random_state
+        )
+
+    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+
+    fold_metrics = {k: [] for k in ["balanced_accuracy", "f1_macro", "g_mean"]}
+
+    for tr_idx, val_idx in cv.split(X, y):
+        X_tr, X_val = X[tr_idx], X[val_idx]
+        y_tr, y_val = y[tr_idx], y[val_idx]
+
+        try:
+            # Применяем сэмплер только к train-фолду
+            if sampler_name == "Baseline" or sampler_factory is None:
+                X_res, y_res = X_tr, y_tr
+            else:
+                sampler = sampler_factory()
+                X_res, y_res = sampler.fit_resample(X_tr, y_tr)
+
+            rf = RandomForestClassifier(**rf_params)
+            rf.fit(X_res, y_res)
+            y_pred = rf.predict(X_val)
+
+            m = compute_metrics(y_val, y_pred)
+            for k, v in m.items():
+                fold_metrics[k].append(v)
+
+        except Exception:
+            # Если фолд упал — пропускаем
+            continue
+
+    if not fold_metrics["balanced_accuracy"]:
+        return {"balanced_accuracy": np.nan, "f1_macro": np.nan, "g_mean": np.nan}
+
+    return {k: float(np.mean(v)) for k, v in fold_metrics.items()}
+
+
+def _evaluate_sampler_simple(
+    X_train, X_test, y_train, y_test,
+    sampler_name, sampler_factory, rf_params, random_state,
+) -> dict[str, float]:
+    """Простая оценка без CV (fallback для маленьких датасетов)."""
+    try:
+        if sampler_name == "Baseline" or sampler_factory is None:
+            X_res, y_res = X_train, y_train
+        else:
+            sampler = sampler_factory()
+            X_res, y_res = sampler.fit_resample(X_train, y_train)
+
+        rf = RandomForestClassifier(**rf_params)
+        rf.fit(X_res, y_res)
+        return compute_metrics(y_test, rf.predict(X_test))
+    except Exception:
+        return {"balanced_accuracy": np.nan, "f1_macro": np.nan, "g_mean": np.nan}
 
 
 # ---------------------------------------------------------------------------
@@ -204,8 +525,8 @@ def run_one(
     random_state: int,
 ) -> dict:
     """
-    Загружает датасет, применяет сэмплер, обучает RF, считает метрики.
-    Возвращает словарь с результатами.
+    Загружает датасет, оценивает сэмплер через внешнюю CV,
+    использует rf_params подобранные Optuna заранее.
     """
     result = {
         "dataset":  ds_dir.name,
@@ -220,34 +541,29 @@ def run_one(
         y_train = np.load(ds_dir / "y_train.npy")
         y_test  = np.load(ds_dir / "y_test.npy")
 
-        # Читаем мета-информацию для отчёта
+        # Мета-информация
         meta_path = ds_dir / "meta.json"
         if meta_path.exists():
             with open(meta_path) as f:
                 meta = json.load(f)
-            result["n_classes"]    = meta.get("n_classes", len(np.unique(y_train)))
-            result["n_features"]   = meta.get("n_features", X_train.shape[1])
-            result["n_train"]      = meta.get("n_samples_train", len(y_train))
-            result["IR"]           = meta.get("imbalance_ratio", np.nan)
-            result["base_type"]    = meta.get("base_type", "unknown")
+            result["n_classes"]  = meta.get("n_classes",    len(np.unique(y_train)))
+            result["n_features"] = meta.get("n_features",   X_train.shape[1])
+            result["n_train"]    = meta.get("n_samples_train", len(y_train))
+            result["IR"]         = meta.get("imbalance_ratio", np.nan)
+            result["base_type"]  = meta.get("base_type",    "unknown")
 
-        # Применяем сэмплер
-        if sampler_name == "Baseline" or sampler_factory is None:
-            X_res, y_res = X_train, y_train
-        else:
-            sampler = sampler_factory()
-            X_res, y_res = sampler.fit_resample(X_train, y_train)
+        # Объединяем train+test для внешней CV
+        X_all = np.vstack([X_train, X_test])
+        y_all = np.concatenate([y_train, y_test])
 
-        result["n_train_resampled"] = len(y_res)
-
-        # RandomForest
-        rf = RandomForestClassifier(random_state=random_state, **rf_params)
-        rf.fit(X_res, y_res)
-        y_pred = rf.predict(X_test)
-
-        # Метрики
-        metrics = compute_metrics(y_test, y_pred)
+        # Внешняя CV для оценки сэмплера
+        metrics = evaluate_sampler_cv(
+            X_all, y_all,
+            sampler_name, sampler_factory,
+            rf_params, random_state,
+        )
         result.update(metrics)
+        result["n_train_resampled"] = len(y_train)  # приблизительно
 
     except Exception as e:
         result["status"] = "error"
@@ -266,15 +582,47 @@ def run_one(
 def run_dataset(
     ds_dir: Path,
     registry: dict,
-    rf_params: dict,
+    rf_params: dict,           # дефолтные параметры (fallback если Optuna недоступна)
     random_state: int,
     skip_samplers: set[str],
 ) -> list[dict]:
+    """
+    Для одного датасета:
+      1. Подбирает гиперпараметры RF через Optuna (один раз, на исходных данных)
+      2. Оценивает каждый сэмплер через внешнюю CV с найденными параметрами
+    """
+    # ── Шаг 1: Optuna-тюнинг RF (один раз на датасет) ────────────────
+    try:
+        X_train = np.load(ds_dir / "X_train.npy")
+        y_train = np.load(ds_dir / "y_train.npy")
+        X_test  = np.load(ds_dir / "X_test.npy")
+        y_test  = np.load(ds_dir / "y_test.npy")
+
+        # Объединяем для CV
+        X_all = np.vstack([X_train, X_test])
+        y_all = np.concatenate([y_train, y_test])
+
+        best_rf_params = tune_rf_optuna(X_all, y_all, random_state)
+        print(f"    Optuna RF: n_est={best_rf_params['n_estimators']}  "
+              f"depth={best_rf_params['max_depth']}  "
+              f"feat={best_rf_params['max_features']}  "
+              f"msl={best_rf_params['min_samples_leaf']}")
+    except Exception as e:
+        # Если Optuna не отработала — используем дефолтные параметры
+        print(f"    Optuna fallback: {str(e)[:60]}")
+        best_rf_params = rf_params.copy()
+
+    # ── Шаг 2: оценка каждого сэмплера ───────────────────────────────
     rows = []
     for sampler_name, factory in registry.items():
         if sampler_name in skip_samplers:
             continue
-        row = run_one(ds_dir, sampler_name, factory, rf_params, random_state)
+        row = run_one(ds_dir, sampler_name, factory, best_rf_params, random_state)
+        # Сохраняем лучшие RF-параметры в строку для прозрачности
+        row["rf_n_estimators"]     = best_rf_params.get("n_estimators", np.nan)
+        row["rf_max_depth"]        = best_rf_params.get("max_depth",    np.nan)
+        row["rf_max_features"]     = str(best_rf_params.get("max_features", ""))
+        row["rf_min_samples_leaf"] = best_rf_params.get("min_samples_leaf", np.nan)
         rows.append(row)
     return rows
 
@@ -343,7 +691,7 @@ def run_benchmark(
     total = len(todo)
 
     if n_jobs == 1:
-        # Последовательно — с подробным прогрессом
+        # Последовательно — с подробным прогрессом и сохранением после каждого датасета
         for i, (ds_dir, skip) in enumerate(todo, 1):
             n_skip = len(skip)
             n_run  = len(registry) - n_skip
@@ -364,19 +712,32 @@ def run_benchmark(
                 print(f"  {status} {row['sampler']:<22} "
                       f"BA={ba_str}  F1={f1_str}  GM={gm_str}{err}")
 
-            # Промежуточное сохранение каждые 5 датасетов
+            # Сохраняем после каждого датасета — так --resume всегда актуален
+            _save_results(all_rows, output_dir)
             if i % 5 == 0:
-                _save_results(all_rows, output_dir)
-                print(f"  → Промежуточное сохранение ({len(all_rows)} строк)")
+                print(f"  → Сохранено ({len(all_rows)} строк, {i}/{total} датасетов)")
     else:
-        # Параллельно по датасетам
-        print(f"Параллельный режим: n_jobs={n_jobs}")
-        batch_results = Parallel(n_jobs=n_jobs, verbose=3)(
-            delayed(run_dataset)(ds_dir, registry, rf_params, random_state, skip)
-            for ds_dir, skip in todo
-        )
-        for rows in batch_results:
-            all_rows.extend(rows)
+        # Параллельно — обрабатываем батчами по 10 датасетов
+        # чтобы промежуточные результаты сохранялись
+        BATCH_SIZE = 10
+        batches = [todo[i:i+BATCH_SIZE] for i in range(0, len(todo), BATCH_SIZE)]
+        print(f"Параллельный режим: n_jobs={n_jobs}, батчей: {len(batches)}")
+
+        processed = 0
+        for b_idx, batch in enumerate(batches, 1):
+            batch_results = Parallel(n_jobs=n_jobs, verbose=0)(
+                delayed(run_dataset)(ds_dir, registry, rf_params, random_state, skip)
+                for ds_dir, skip in batch
+            )
+            for rows in batch_results:
+                all_rows.extend(rows)
+            processed += len(batch)
+
+            # Сохраняем после каждого батча
+            _save_results(all_rows, output_dir)
+            print(f"  → Батч {b_idx}/{len(batches)} готов "
+                  f"({processed}/{total} датасетов, "
+                  f"{len(all_rows)} строк сохранено)")
 
     return _save_results(all_rows, output_dir)
 
@@ -400,6 +761,7 @@ def _save_results(rows: list[dict], output_dir: Path) -> pd.DataFrame:
            ["base_type", "n_classes", "n_features", "n_train", "IR",
             "n_train_resampled"]]
         + metric_cols
+        + ["rf_n_estimators", "rf_max_depth", "rf_max_features", "rf_min_samples_leaf"]
         + ["error"]
     )
     col_order = [c for c in col_order if c in df.columns]
@@ -462,6 +824,7 @@ def _save_results(rows: list[dict], output_dir: Path) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def main():
+    global OPTUNA_TRIALS
     parser = argparse.ArgumentParser(
         description="Бенчмарк сэмплеров на имбалансных датасетах",
         formatter_class=argparse.RawTextHelpFormatter,
@@ -478,40 +841,64 @@ def main():
                         help="Продолжить с места остановки")
     parser.add_argument("--seed",      type=int, default=42,
                         help="Random seed (default: 42)")
+    parser.add_argument("--pack",       default=None,
+                        help="Пакет сэмплеров (default: все):\n"
+                             "  baseline  — только Baseline\n"
+                             "  imblearn  — стандартные imblearn (быстро)\n"
+                             "  sv        — smote_variants через OvA (медленно)\n"
+                             "  multi     — multi-imbalance\n"
+                             "  fast      — всё кроме smote_variants\n"
+                             "  all       — полный набор\n"
+                             "  Подробнее: --list-packs")
+    parser.add_argument("--list-packs", action="store_true",
+                        help="Показать список пакетов и примеры запуска")
     parser.add_argument("--samplers",  default=None,
-                        help="Запятая-разделённый список сэмплеров (default: все)\n"
+                        help="Конкретные сэмплеры через запятую (приоритет над --pack)\n"
                              "  Пример: --samplers SMOTE,ADASYN,Baseline")
-    parser.add_argument("--rf-trees",  type=int, default=200,
-                        help="Число деревьев RandomForest (default: 200)")
-    parser.add_argument("--rf-depth",  type=int, default=None,
-                        help="max_depth RandomForest (default: None)")
+    parser.add_argument("--trials",    type=int, default=OPTUNA_TRIALS,
+                        help=f"Число Optuna trials для подбора RF (default: {OPTUNA_TRIALS})")
     args = parser.parse_args()
+
+    # ── --list-packs ──────────────────────────────────────────────────
+    if args.list_packs:
+        print_packs()
+        return
+
+    # Обновляем число trials если передан аргумент
+    OPTUNA_TRIALS = args.trials
 
     datasets_dir = Path(args.datasets)
     selected_csv = Path(args.selected) if args.selected else None
     output_dir   = Path(args.output)
 
-    if not datasets_dir.exists():
-        print(f"Папка датасетов не найдена: {datasets_dir}")
-        return
-
-    rf_params = {
-        "n_estimators": args.rf_trees,
-        "max_depth":    args.rf_depth,
+    # Дефолтные RF-параметры (используются как fallback если Optuna не справилась)
+    rf_params_default = {
+        "n_estimators": 200,
+        "max_depth":    None,
         "n_jobs":       1,
-        "class_weight": "balanced",   # RF сам учитывает дисбаланс — честный baseline
+        "class_weight": "balanced",
+        "random_state": args.seed,
     }
 
-    samplers_filter = None
-    if args.samplers:
-        samplers_filter = [s.strip() for s in args.samplers.split(",")]
+    # Определяем набор сэмплеров
+    samplers_filter = resolve_samplers(args.pack, args.samplers)
+    pack_label = f"пакет '{args.pack}'" if args.pack else \
+                 (f"сэмплеры: {samplers_filter}" if samplers_filter else "все сэмплеры")
 
     print(f"\n{'='*60}")
-    print(f"  Датасеты:  {datasets_dir}")
-    print(f"  Выбранные: {selected_csv or 'все'}")
-    print(f"  Результаты: {output_dir}")
-    print(f"  RF: n_estimators={args.rf_trees}, max_depth={args.rf_depth}")
-    print(f"  Random seed: {args.seed}")
+    print(f"  Датасеты:        {datasets_dir}")
+    print(f"  Выбранные:       {selected_csv or 'все'}")
+    print(f"  Результаты:      {output_dir}")
+    print(f"  Сэмплеры:        {pack_label}")
+    print(f"  Seed:            {args.seed}")
+    print(f"\n  Optuna RF-тюнинг:")
+    print(f"    Trials:          {OPTUNA_TRIALS}")
+    print(f"    Внутренняя CV:   {INNER_CV_FOLDS} фолда (для подбора RF)")
+    print(f"    Внешняя CV:      {OUTER_CV_FOLDS} фолда (для оценки сэмплера)")
+    print(f"    Pruning:         MedianPruner")
+    print(f"    Пространство:    n_est={RF_PARAM_SPACE['n_estimators']}  "
+          f"depth={RF_PARAM_SPACE['max_depth']}  "
+          f"feat={RF_PARAM_SPACE['max_features']}")
     print(f"{'='*60}\n")
 
     df = run_benchmark(
@@ -521,7 +908,7 @@ def main():
         n_jobs=args.jobs,
         resume=args.resume,
         random_state=args.seed,
-        rf_params=rf_params,
+        rf_params=rf_params_default,
         samplers_filter=samplers_filter,
     )
 
